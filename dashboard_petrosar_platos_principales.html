@@ -1,0 +1,194 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.dash{padding:1rem 0}
+.header{margin-bottom:1.5rem}
+.header h1{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.header p{font-size:13px;color:var(--color-text-secondary);margin-top:4px}
+.tabs{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{padding:6px 14px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary)}
+.tab.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500;border-color:var(--color-border-primary)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem}
+.kpi{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.kpi-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
+.kpi-value{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.kpi-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:1.5rem}
+.chart-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px}
+.chart-wrap{position:relative;width:100%}
+.h220{height:220px}
+.h180{height:180px}
+.full-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:16px}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;font-size:12px;color:var(--color-text-secondary)}
+.legend span{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:right;padding:6px 8px;color:var(--color-text-secondary);font-weight:400;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
+thead th:first-child{text-align:left}
+tbody td{text-align:right;padding:6px 8px;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary)}
+tbody td:first-child{text-align:left;color:var(--color-text-secondary)}
+tbody tr:last-child td{border-bottom:none;font-weight:500;color:var(--color-text-primary)}
+.pill{display:inline-block;padding:2px 8px;border-radius:var(--border-radius-md);font-size:11px}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}}
+</style>
+
+<div class="dash">
+<div class="header">
+  <h1>Platos principales — PETROSAR</h1>
+  <p>Resumen comparativo 2026 · Servicios de Alimentación</p>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div id="content"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const MONTHS = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+const RESUMEN = {"ENERO":{"dias":21,"total_platos":1229,"prom_platos_dia":58.5,"max_diario":92,"min_diario":40,"neto_total":16265901.99,"prom_neto_dia":774566.76,"precio_prom_plato":13235.07,"cli_total_platos":1229,"cli_neto":16265901.99,"cli_precio_prom":13235.07,"pet_total_platos":0,"pet_neto":0,"pet_precio_prom":0},"FEBRERO":{"dias":16,"total_platos":844,"prom_platos_dia":52.8,"max_diario":76,"min_diario":40,"neto_total":11808132.4,"prom_neto_dia":738008.28,"precio_prom_plato":13990.68,"cli_total_platos":818,"cli_neto":11421768.78,"cli_precio_prom":13963.04,"pet_total_platos":26,"pet_neto":386363.62,"pet_precio_prom":14860.14},"MARZO":{"dias":20,"total_platos":1360,"prom_platos_dia":68,"max_diario":93,"min_diario":52,"neto_total":19073845.55,"prom_neto_dia":953692.28,"precio_prom_plato":14024.89,"cli_total_platos":1329,"cli_neto":18622192.68,"cli_precio_prom":14012.18,"pet_total_platos":31,"pet_neto":451652.87,"pet_precio_prom":14569.45},"ABRIL":{"dias":7,"total_platos":460,"prom_platos_dia":65.7,"max_diario":79,"min_diario":49,"neto_total":6526886.59,"prom_neto_dia":932412.37,"precio_prom_plato":14188.88,"cli_total_platos":56,"cli_neto":768628.12,"cli_precio_prom":13725.5,"pet_total_platos":2,"pet_neto":17685.95,"pet_precio_prom":8842.98}};
+
+const DAILY = [{"mes":"ENERO","fecha":"2026-01-02","cantidad_total":49,"neto_total":739983.51,"precio_prom":15101.7,"cantidad_clientes":49,"neto_clientes":739983.51,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-05","cantidad_total":65,"neto_total":769371.96,"precio_prom":11836.49,"cantidad_clientes":65,"neto_clientes":769371.96,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-06","cantidad_total":40,"neto_total":524281.02,"precio_prom":13107.03,"cantidad_clientes":40,"neto_clientes":524281.02,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-07","cantidad_total":61,"neto_total":763024.87,"precio_prom":12508.6,"cantidad_clientes":61,"neto_clientes":763024.87,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-08","cantidad_total":61,"neto_total":736314.11,"precio_prom":12070.72,"cantidad_clientes":61,"neto_clientes":736314.11,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-09","cantidad_total":76,"neto_total":1298661.22,"precio_prom":17087.65,"cantidad_clientes":76,"neto_clientes":1298661.22,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-12","cantidad_total":60,"neto_total":664545.52,"precio_prom":11075.76,"cantidad_clientes":60,"neto_clientes":664545.52,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-13","cantidad_total":52,"neto_total":624694.24,"precio_prom":12013.35,"cantidad_clientes":52,"neto_clientes":624694.24,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-14","cantidad_total":50,"neto_total":597421.56,"precio_prom":11948.43,"cantidad_clientes":50,"neto_clientes":597421.56,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-15","cantidad_total":71,"neto_total":860462.83,"precio_prom":12119.19,"cantidad_clientes":71,"neto_clientes":860462.83,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-16","cantidad_total":92,"neto_total":1535686.05,"precio_prom":16692.24,"cantidad_clientes":92,"neto_clientes":1535686.05,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-19","cantidad_total":55,"neto_total":648677.75,"precio_prom":11794.14,"cantidad_clientes":55,"neto_clientes":648677.75,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-20","cantidad_total":46,"neto_total":469124.05,"precio_prom":10198.35,"cantidad_clientes":46,"neto_clientes":469124.05,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-21","cantidad_total":59,"neto_total":778165.35,"precio_prom":13189.24,"cantidad_clientes":59,"neto_clientes":778165.35,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-22","cantidad_total":54,"neto_total":630363.71,"precio_prom":11673.4,"cantidad_clientes":54,"neto_clientes":630363.71,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-23","cantidad_total":62,"neto_total":1038710.83,"precio_prom":16753.4,"cantidad_clientes":62,"neto_clientes":1038710.83,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-26","cantidad_total":66,"neto_total":725008.35,"precio_prom":10984.98,"cantidad_clientes":66,"neto_clientes":725008.35,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-27","cantidad_total":55,"neto_total":690347.11,"precio_prom":12551.77,"cantidad_clientes":55,"neto_clientes":690347.11,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-28","cantidad_total":48,"neto_total":532826.47,"precio_prom":11100.55,"cantidad_clientes":48,"neto_clientes":532826.47,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-29","cantidad_total":52,"neto_total":629719.05,"precio_prom":12109.98,"cantidad_clientes":52,"neto_clientes":629719.05,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ENERO","fecha":"2026-01-30","cantidad_total":55,"neto_total":1008512.43,"precio_prom":18336.59,"cantidad_clientes":55,"neto_clientes":1008512.43,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"FEBRERO","fecha":"2026-02-02","cantidad_total":40,"neto_total":454297.55,"precio_prom":11357.44,"cantidad_clientes":38,"neto_clientes":429669.45,"cantidad_petrosar":2,"neto_petrosar":24628.1},{"mes":"FEBRERO","fecha":"2026-02-03","cantidad_total":48,"neto_total":541818.25,"precio_prom":11287.88,"cantidad_clientes":46,"neto_clientes":521322.38,"cantidad_petrosar":2,"neto_petrosar":20495.87},{"mes":"FEBRERO","fecha":"2026-02-04","cantidad_total":49,"neto_total":528694.26,"precio_prom":10789.68,"cantidad_clientes":48,"neto_clientes":513900.87,"cantidad_petrosar":1,"neto_petrosar":14793.39},{"mes":"FEBRERO","fecha":"2026-02-05","cantidad_total":76,"neto_total":871917.41,"precio_prom":11472.6,"cantidad_clientes":74,"neto_clientes":846545.51,"cantidad_petrosar":2,"neto_petrosar":25371.9},{"mes":"FEBRERO","fecha":"2026-02-06","cantidad_total":62,"neto_total":1226231.49,"precio_prom":19777.93,"cantidad_clientes":59,"neto_clientes":1156810,"cantidad_petrosar":3,"neto_petrosar":69421.49},{"mes":"FEBRERO","fecha":"2026-02-09","cantidad_total":60,"neto_total":804264.41,"precio_prom":13404.41,"cantidad_clientes":58,"neto_clientes":773851.19,"cantidad_petrosar":2,"neto_petrosar":30413.22},{"mes":"FEBRERO","fecha":"2026-02-10","cantidad_total":52,"neto_total":718595,"precio_prom":13819.13,"cantidad_clientes":51,"neto_clientes":703884.26,"cantidad_petrosar":1,"neto_petrosar":14710.74},{"mes":"FEBRERO","fecha":"2026-02-11","cantidad_total":60,"neto_total":733619.83,"precio_prom":12227,"cantidad_clientes":60,"neto_clientes":733619.83,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"FEBRERO","fecha":"2026-02-12","cantidad_total":51,"neto_total":633322.29,"precio_prom":12418.08,"cantidad_clientes":48,"neto_clientes":594479.32,"cantidad_petrosar":3,"neto_petrosar":38842.97},{"mes":"FEBRERO","fecha":"2026-02-13","cantidad_total":68,"neto_total":1300214.91,"precio_prom":19120.81,"cantidad_clientes":68,"neto_clientes":1300214.91,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"FEBRERO","fecha":"2026-02-18","cantidad_total":49,"neto_total":593900.79,"precio_prom":12120.42,"cantidad_clientes":47,"neto_clientes":572082.61,"cantidad_petrosar":2,"neto_petrosar":21818.18},{"mes":"FEBRERO","fecha":"2026-02-20","cantidad_total":40,"neto_total":717223.19,"precio_prom":17930.58,"cantidad_clientes":40,"neto_clientes":717223.19,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"FEBRERO","fecha":"2026-02-23","cantidad_total":41,"neto_total":508297.49,"precio_prom":12397.5,"cantidad_clientes":39,"neto_clientes":482512.37,"cantidad_petrosar":2,"neto_petrosar":25785.12},{"mes":"FEBRERO","fecha":"2026-02-25","cantidad_total":47,"neto_total":545338.83,"precio_prom":11602.95,"cantidad_clientes":45,"neto_clientes":525421.48,"cantidad_petrosar":2,"neto_petrosar":19917.35},{"mes":"FEBRERO","fecha":"2026-02-26","cantidad_total":51,"neto_total":668495.82,"precio_prom":13107.76,"cantidad_clientes":49,"neto_clientes":637090.86,"cantidad_petrosar":2,"neto_petrosar":31404.96},{"mes":"FEBRERO","fecha":"2026-02-27","cantidad_total":50,"neto_total":961900.88,"precio_prom":19238.02,"cantidad_clientes":48,"neto_clientes":913140.55,"cantidad_petrosar":2,"neto_petrosar":48760.33},{"mes":"MARZO","fecha":"2026-03-02","cantidad_total":54,"neto_total":714528.89,"precio_prom":13232.02,"cantidad_clientes":53,"neto_clientes":698991.7,"cantidad_petrosar":1,"neto_petrosar":15537.19},{"mes":"MARZO","fecha":"2026-03-03","cantidad_total":57,"neto_total":727950.38,"precio_prom":12771.06,"cantidad_clientes":55,"neto_clientes":703570.21,"cantidad_petrosar":2,"neto_petrosar":24380.17},{"mes":"MARZO","fecha":"2026-03-04","cantidad_total":70,"neto_total":947685.91,"precio_prom":13538.37,"cantidad_clientes":65,"neto_clientes":881322.27,"cantidad_petrosar":5,"neto_petrosar":66363.64},{"mes":"MARZO","fecha":"2026-03-05","cantidad_total":89,"neto_total":1088264.39,"precio_prom":12227.69,"cantidad_clientes":87,"neto_clientes":1062479.27,"cantidad_petrosar":2,"neto_petrosar":25785.12},{"mes":"MARZO","fecha":"2026-03-06","cantidad_total":58,"neto_total":1120260.18,"precio_prom":19314.83,"cantidad_clientes":58,"neto_clientes":1120260.18,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-09","cantidad_total":69,"neto_total":875013.53,"precio_prom":12681.36,"cantidad_clientes":69,"neto_clientes":875013.53,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-10","cantidad_total":81,"neto_total":997483.26,"precio_prom":12314.61,"cantidad_clientes":78,"neto_clientes":965747.73,"cantidad_petrosar":3,"neto_petrosar":31735.53},{"mes":"MARZO","fecha":"2026-03-11","cantidad_total":65,"neto_total":842809.88,"precio_prom":12966.31,"cantidad_clientes":63,"neto_clientes":812314.02,"cantidad_petrosar":2,"neto_petrosar":30495.86},{"mes":"MARZO","fecha":"2026-03-12","cantidad_total":83,"neto_total":1052942.12,"precio_prom":12686.05,"cantidad_clientes":81,"neto_clientes":1032942.12,"cantidad_petrosar":2,"neto_petrosar":20000},{"mes":"MARZO","fecha":"2026-03-13","cantidad_total":72,"neto_total":1374545.53,"precio_prom":19090.91,"cantidad_clientes":70,"neto_clientes":1325785.2,"cantidad_petrosar":2,"neto_petrosar":48760.33},{"mes":"MARZO","fecha":"2026-03-16","cantidad_total":93,"neto_total":1180710.69,"precio_prom":12695.81,"cantidad_clientes":89,"neto_clientes":1131950.36,"cantidad_petrosar":4,"neto_petrosar":48760.33},{"mes":"MARZO","fecha":"2026-03-17","cantidad_total":52,"neto_total":683157.03,"precio_prom":13137.64,"cantidad_clientes":50,"neto_clientes":661338.85,"cantidad_petrosar":2,"neto_petrosar":21818.18},{"mes":"MARZO","fecha":"2026-03-18","cantidad_total":62,"neto_total":819652.85,"precio_prom":13220.21,"cantidad_clientes":61,"neto_clientes":809404.92,"cantidad_petrosar":1,"neto_petrosar":10247.93},{"mes":"MARZO","fecha":"2026-03-19","cantidad_total":69,"neto_total":939024.72,"precio_prom":13609.05,"cantidad_clientes":69,"neto_clientes":939024.72,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-20","cantidad_total":71,"neto_total":1364049.69,"precio_prom":19211.97,"cantidad_clientes":67,"neto_clientes":1266529.03,"cantidad_petrosar":4,"neto_petrosar":97520.66},{"mes":"MARZO","fecha":"2026-03-23","cantidad_total":61,"neto_total":821652.87,"precio_prom":13469.72,"cantidad_clientes":61,"neto_clientes":821652.87,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-25","cantidad_total":52,"neto_total":629900.8,"precio_prom":12113.48,"cantidad_clientes":52,"neto_clientes":629900.8,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-26","cantidad_total":73,"neto_total":934396.66,"precio_prom":12799.95,"cantidad_clientes":72,"neto_clientes":924148.73,"cantidad_petrosar":1,"neto_petrosar":10247.93},{"mes":"MARZO","fecha":"2026-03-27","cantidad_total":56,"neto_total":1096000.08,"precio_prom":19571.43,"cantidad_clientes":56,"neto_clientes":1096000.08,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"MARZO","fecha":"2026-03-30","cantidad_total":73,"neto_total":863816.09,"precio_prom":11833.1,"cantidad_clientes":73,"neto_clientes":863816.09,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ABRIL","fecha":"2026-04-01","cantidad_total":79,"neto_total":1096975.23,"precio_prom":13885.76,"cantidad_clientes":79,"neto_clientes":1096975.23,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ABRIL","fecha":"2026-04-06","cantidad_total":58,"neto_total":786314.07,"precio_prom":13557.14,"cantidad_clientes":56,"neto_clientes":768628.12,"cantidad_petrosar":2,"neto_petrosar":17685.95},{"mes":"ABRIL","fecha":"2026-04-07","cantidad_total":63,"neto_total":858721.21,"precio_prom":13630.5,"cantidad_clientes":61,"neto_clientes":833266.67,"cantidad_petrosar":2,"neto_petrosar":25454.54},{"mes":"ABRIL","fecha":"2026-04-08","cantidad_total":73,"neto_total":907752.08,"precio_prom":12434.96,"cantidad_clientes":73,"neto_clientes":907752.08,"cantidad_petrosar":0,"neto_petrosar":0},{"mes":"ABRIL","fecha":"2026-04-09","cantidad_total":68,"neto_total":917537.17,"precio_prom":13493.19,"cantidad_clientes":65,"neto_clientes":873983.46,"cantidad_petrosar":3,"neto_petrosar":43553.71},{"mes":"ABRIL","fecha":"2026-04-10","cantidad_total":70,"neto_total":1359735.64,"precio_prom":19424.79,"cantidad_clientes":66,"neto_clientes":1262214.97,"cantidad_petrosar":4,"neto_petrosar":97520.67},{"mes":"ABRIL","fecha":"2026-04-13","cantidad_total":49,"neto_total":599851.19,"precio_prom":12241.86,"cantidad_clientes":47,"neto_clientes":578694.17,"cantidad_petrosar":2,"neto_petrosar":21157.02}];
+
+const ACTIVE_MONTHS = MONTHS.filter(m => RESUMEN[m] && RESUMEN[m].total_platos > 0);
+
+let currentTab = 'RESUMEN';
+let charts = {};
+
+function fmt(n){return Math.round(n).toLocaleString('es-AR')}
+function fmtM(n){return '$'+Math.round(n/1000000*10)/10+'M'}
+function fmtP(n){return '$'+Math.round(n).toLocaleString('es-AR')}
+
+function destroyCharts(){Object.values(charts).forEach(c=>c.destroy()); charts={};}
+
+function renderTabs(){
+  const el=document.getElementById('tabs');
+  const tabs=['RESUMEN',...ACTIVE_MONTHS];
+  el.innerHTML=tabs.map(t=>`<button class="tab${t===currentTab?' active':''}" onclick="setTab('${t}')">${t==='RESUMEN'?'Resumen anual':t.charAt(0)+t.slice(1).toLowerCase()}</button>`).join('');
+}
+
+function setTab(t){currentTab=t; destroyCharts(); renderTabs(); renderContent();}
+
+function renderContent(){
+  if(currentTab==='RESUMEN') renderResumen();
+  else renderMes(currentTab);
+}
+
+function renderResumen(){
+  const totalPlatos=ACTIVE_MONTHS.reduce((s,m)=>s+RESUMEN[m].total_platos,0);
+  const totalNeto=ACTIVE_MONTHS.reduce((s,m)=>s+RESUMEN[m].neto_total,0);
+  const totalDias=ACTIVE_MONTHS.reduce((s,m)=>s+RESUMEN[m].dias,0);
+  const promPlatoDia=totalPlatos/totalDias;
+  const precioProm=totalNeto/totalPlatos;
+
+  document.getElementById('content').innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Total platos vendidos</div><div class="kpi-value">${fmt(totalPlatos)}</div><div class="kpi-sub">${fmt(totalDias)} días trabajados</div></div>
+    <div class="kpi"><div class="kpi-label">Facturación neta total</div><div class="kpi-value">${fmtM(totalNeto)}</div><div class="kpi-sub">${fmtP(totalNeto)}</div></div>
+    <div class="kpi"><div class="kpi-label">Promedio platos / día</div><div class="kpi-value">${Math.round(promPlatoDia*10)/10}</div><div class="kpi-sub">acumulado</div></div>
+    <div class="kpi"><div class="kpi-label">Precio prom. por plato</div><div class="kpi-value">$${Math.round(precioProm/100)*100>0?Math.round(precioProm).toLocaleString('es-AR'):'-'}</div><div class="kpi-sub">promedio anual</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Platos vendidos por mes</div>
+      <div class="chart-wrap h220"><canvas id="c1" role="img" aria-label="Platos vendidos por mes">Barras mensuales de cantidad de platos.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Facturación neta por mes</div>
+      <div class="chart-wrap h220"><canvas id="c2" role="img" aria-label="Facturación neta por mes">Barras mensuales de facturación.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Precio promedio por plato</div>
+      <div class="chart-wrap h220"><canvas id="c3" role="img" aria-label="Precio promedio por plato">Línea de precio promedio mensual.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Promedio platos / día</div>
+      <div class="chart-wrap h220"><canvas id="c4" role="img" aria-label="Promedio de platos por día">Línea de promedio diario.</canvas></div>
+    </div>
+  </div>
+
+  <div class="full-card">
+    <div class="section-title">Resumen mensual comparativo</div>
+    <table>
+      <thead><tr><th>Mes</th><th>Días</th><th>Platos</th><th>Prom/día</th><th>Máx</th><th>Facturación</th><th>Precio prom.</th></tr></thead>
+      <tbody>
+        ${ACTIVE_MONTHS.map(m=>{const r=RESUMEN[m];return`<tr><td>${m.charAt(0)+m.slice(1).toLowerCase()}</td><td>${r.dias}</td><td>${fmt(r.total_platos)}</td><td>${r.prom_platos_dia}</td><td>${r.max_diario}</td><td>$${fmt(r.neto_total)}</td><td>$${fmt(r.precio_prom_plato)}</td></tr>`}).join('')}
+        <tr><td>TOTAL</td><td>${totalDias}</td><td>${fmt(totalPlatos)}</td><td>${Math.round(promPlatoDia*10)/10}</td><td>—</td><td>$${fmt(totalNeto)}</td><td>$${fmt(precioProm)}</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  const labels=ACTIVE_MONTHS.map(m=>m.charAt(0)+m.slice(1,3).toLowerCase());
+  const BLUE='#378ADD'; const TEAL='#1D9E75'; const CORAL='#D85A30'; const AMB='#BA7517';
+
+  charts.c1=new Chart(document.getElementById('c1'),{type:'bar',data:{labels,datasets:[{label:'Clientes',data:ACTIVE_MONTHS.map(m=>RESUMEN[m].cli_total_platos),backgroundColor:BLUE,borderRadius:3},{label:'Petrosar',data:ACTIVE_MONTHS.map(m=>RESUMEN[m].pet_total_platos),backgroundColor:TEAL,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false},ticks:{autoSkip:false}},y:{stacked:true,grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>fmt(v)}}}}});
+
+  charts.c2=new Chart(document.getElementById('c2'),{type:'bar',data:{labels,datasets:[{label:'Facturación',data:ACTIVE_MONTHS.map(m=>RESUMEN[m].neto_total),backgroundColor:AMB,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{autoSkip:false}},y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>'$'+Math.round(v/1e6)+'M'}}}}});
+
+  charts.c3=new Chart(document.getElementById('c3'),{type:'line',data:{labels,datasets:[{label:'Precio prom.',data:ACTIVE_MONTHS.map(m=>RESUMEN[m].precio_prom_plato),borderColor:CORAL,backgroundColor:'rgba(216,90,48,0.08)',tension:0.3,pointRadius:5,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{autoSkip:false}},y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>'$'+fmt(v)}}}}});
+
+  charts.c4=new Chart(document.getElementById('c4'),{type:'line',data:{labels,datasets:[{label:'Prom/día',data:ACTIVE_MONTHS.map(m=>RESUMEN[m].prom_platos_dia),borderColor:BLUE,backgroundColor:'rgba(55,138,221,0.08)',tension:0.3,pointRadius:5,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{autoSkip:false}},y:{grid:{color:'rgba(128,128,128,0.1)'}}}}});
+}
+
+function renderMes(mes){
+  const r=RESUMEN[mes];
+  const dias=DAILY.filter(d=>d.mes===mes);
+  const labels=dias.map(d=>d.fecha.slice(5));
+  const BLUE='#378ADD'; const TEAL='#1D9E75'; const CORAL='#D85A30'; const AMB='#BA7517';
+
+  document.getElementById('content').innerHTML=`
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Total platos</div><div class="kpi-value">${fmt(r.total_platos)}</div><div class="kpi-sub">${r.dias} días trabajados</div></div>
+    <div class="kpi"><div class="kpi-label">Facturación neta</div><div class="kpi-value">${fmtM(r.neto_total)}</div><div class="kpi-sub">$${fmt(r.neto_total)}</div></div>
+    <div class="kpi"><div class="kpi-label">Prom. platos / día</div><div class="kpi-value">${r.prom_platos_dia}</div><div class="kpi-sub">Máx ${r.max_diario} · Mín ${r.min_diario}</div></div>
+    <div class="kpi"><div class="kpi-label">Precio prom. plato</div><div class="kpi-value">$${fmt(r.precio_prom_plato)}</div><div class="kpi-sub">Prom. neto/día $${fmt(r.prom_neto_dia)}</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card" style="grid-column:span 2">
+      <div class="legend">
+        <span><span class="leg-dot" style="background:${BLUE}"></span>Clientes externos</span>
+        ${r.pet_total_platos>0?`<span><span class="leg-dot" style="background:${TEAL}"></span>Petrosar interno</span>`:''}
+      </div>
+      <div class="chart-title">Cantidad de platos por día</div>
+      <div class="chart-wrap" style="height:${Math.max(180,dias.length*32)}px"><canvas id="cd1" role="img" aria-label="Platos diarios del mes">Barras horizontales por día.</canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Facturación neta diaria ($)</div>
+      <div class="chart-wrap h220"><canvas id="cd2" role="img" aria-label="Facturación diaria">Barras de facturación diaria.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Precio promedio por plato ($)</div>
+      <div class="chart-wrap h220"><canvas id="cd3" role="img" aria-label="Precio promedio diario">Línea de precio promedio diario.</canvas></div>
+    </div>
+  </div>
+
+  ${r.pet_total_platos>0?`<div class="full-card">
+    <div class="section-title">Desglose Clientes externos vs. Petrosar interno</div>
+    <div class="kpis" style="margin-bottom:0">
+      <div class="kpi"><div class="kpi-label">Platos clientes</div><div class="kpi-value">${fmt(r.cli_total_platos)}</div><div class="kpi-sub">$${fmt(r.cli_neto)}</div></div>
+      <div class="kpi"><div class="kpi-label">Platos Petrosar</div><div class="kpi-value">${fmt(r.pet_total_platos)}</div><div class="kpi-sub">$${fmt(r.pet_neto)}</div></div>
+      <div class="kpi"><div class="kpi-label">Precio prom. clientes</div><div class="kpi-value">$${fmt(r.cli_precio_prom)}</div></div>
+      <div class="kpi"><div class="kpi-label">Precio prom. Petrosar</div><div class="kpi-value">$${fmt(r.pet_precio_prom)}</div></div>
+    </div>
+  </div>`:''}
+  `;
+
+  charts.cd1=new Chart(document.getElementById('cd1'),{type:'bar',data:{labels,datasets:[{label:'Clientes',data:dias.map(d=>d.cantidad_clientes),backgroundColor:BLUE,borderRadius:2},{label:'Petrosar',data:dias.map(d=>d.cantidad_petrosar),backgroundColor:TEAL,borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{color:'rgba(128,128,128,0.1)'}},y:{stacked:true,grid:{display:false},ticks:{font:{size:11}}}}}});
+
+  charts.cd2=new Chart(document.getElementById('cd2'),{type:'bar',data:{labels,datasets:[{label:'Neto total',data:dias.map(d=>d.neto_total),backgroundColor:AMB,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:8,maxRotation:45}},y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>'$'+Math.round(v/1e3)+'k'}}}}});
+
+  charts.cd3=new Chart(document.getElementById('cd3'),{type:'line',data:{labels,datasets:[{label:'Precio prom.',data:dias.map(d=>d.precio_prom),borderColor:CORAL,backgroundColor:'rgba(216,90,48,0.08)',tension:0.3,pointRadius:4,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:8,maxRotation:45}},y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{callback:v=>'$'+fmt(v)}}}}});
+}
+
+renderTabs();
+renderContent();
+</script>
