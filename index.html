@@ -3,474 +3,335 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Platos Principales 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Platos Principales 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg:        #f5f4f1;
-    --surface:   #ffffff;
-    --surface2:  #f0ede8;
-    --border:    #ddd9d2;
-    --border2:   #ece9e3;
-    --accent:    #2a5c8f;
-    --accent-lt: #e8f0f9;
-    --accent2:   #c17f3a;
-    --accent2-lt:#fdf3e7;
-    --text:      #1a1917;
-    --text-dim:  #7a756c;
-    --green:     #2e7d5a;
-    --green-lt:  #e8f5ee;
-    --red:       #c0392b;
-    --red-lt:    #fdecea;
-    --blue:      #1a6fa8;
-    --shadow:    0 1px 4px rgba(0,0,0,0.08);
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+  :root{
+    --bg:#f5f4f0;--surface:#fff;--border:#e0ddd6;--text:#1a1a18;--muted:#888;
+    --accent:#1a5276;--accent2:#0e6655;--accent3:#5d3a1a;
+    --c1:#1a5276;--c2:#0e6655;--c3:#5d3a1a;--c4:#4a235a;--c5:#7d6608;
+    --l1:#d6eaf8;--l2:#d5f5e3;--l3:#fdebd0;--l4:#e8daef;--l5:#fef9e7;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; font-size: 14px; min-height: 100vh; }
-
-  /* HEADER */
-  header {
-    background: var(--surface);
-    border-bottom: 2px solid var(--accent);
-    padding: 18px 40px;
-    display: flex; align-items: center; gap: 16px;
-    box-shadow: var(--shadow);
-    position: sticky; top: 0; z-index: 50;
-  }
-  .logo-mark { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; flex-shrink: 0; }
-  header h1 { font-size: 1.1rem; font-weight: 600; color: var(--text); }
-  header .sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-  #status {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
-    color: var(--text-dim); background: var(--surface2);
-    padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
-  }
-  #status.ok  { color: var(--green); background: var(--green-lt); border-color: #b2dfc8; }
-  #status.err { color: var(--red);   background: var(--red-lt); }
-  #status.loading { color: var(--accent); background: var(--accent-lt); border-color: #b8ceea; }
-  .refresh-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-    padding: 7px 16px; border-radius: 6px; font-family: 'Sora', sans-serif;
-    font-size: 0.75rem; cursor: pointer; transition: all 0.15s;
-  }
-  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* MAIN */
-  main { padding: 28px 40px; max-width: 1380px; margin: 0 auto; }
-
-  .sec { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); margin-bottom: 12px; margin-top: 32px; display: flex; align-items: center; gap: 10px; }
-  .sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .sec:first-child { margin-top: 0; }
-
-  /* KPIs */
-  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
-  .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); border-radius: 10px 10px 0 0; }
-  .kpi.gold::before { background: var(--accent2); }
-  .kpi-label { font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 8px; }
-  .kpi-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1; margin-bottom: 4px; letter-spacing: -0.02em; }
-  .kpi.gold .kpi-value { color: var(--accent2); }
-  .kpi-sub { font-size: 0.68rem; color: var(--text-dim); }
-
-  /* CHART */
-  .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; box-shadow: var(--shadow); }
-  .chart-title { font-size: 0.8rem; font-weight: 600; color: var(--text); margin-bottom: 20px; }
-  .bars { display: flex; align-items: flex-end; gap: 12px; height: 150px; }
-  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
-  .bar-top { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--accent); font-weight: 500; text-align: center; }
-  .bar-fill { width: 100%; background: var(--accent-lt); border: 1px solid #b8ceea; border-radius: 4px 4px 0 0; transition: height 0.8s cubic-bezier(.4,0,.2,1); }
-  .bar-fill.cur { background: var(--accent); border-color: var(--accent); }
-  .bar-fill.cur ~ .bar-bot { color: var(--accent); font-weight: 600; }
-  .bar-bot { font-size: 0.63rem; color: var(--text-dim); text-align: center; line-height: 1.4; }
-
-  /* TABLAS */
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-  thead tr { background: var(--accent); color: #fff; }
-  thead.ptr tr { background: var(--accent2); }
-  thead th { padding: 10px 14px; text-align: right; font-weight: 600; font-size: 0.66rem; letter-spacing: 0.02em; white-space: nowrap; }
-  thead th:first-child { text-align: left; }
-  tbody tr { border-bottom: 1px solid var(--border2); transition: background 0.1s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--surface2); }
-  tbody tr.cur-row { background: var(--accent-lt); }
-  tbody td { padding: 9px 14px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 0.71rem; white-space: nowrap; }
-  tbody td:first-child { text-align: left; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 0.76rem; color: var(--accent); }
-  tbody tr.cur-row td:first-child { color: var(--blue); }
-  tfoot tr { background: var(--surface2); border-top: 2px solid var(--border); }
-  tfoot td { padding: 10px 14px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 0.71rem; font-weight: 700; white-space: nowrap; }
-  tfoot td:first-child { text-align: left; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.76rem; }
-
-  .tag-cur { display: inline-block; font-size: 0.5rem; font-weight: 700; background: var(--blue); color: #fff; padding: 1px 6px; border-radius: 10px; letter-spacing: 0.06em; vertical-align: middle; margin-left: 6px; text-transform: uppercase; }
-
-  /* PETROSAR */
-  .petrosar-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
-  .petrosar-header { background: var(--accent2); color: #fff; padding: 13px 22px; font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; gap: 10px; }
-  .petrosar-header .pico { background: rgba(255,255,255,0.22); border-radius: 4px; padding: 2px 8px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; }
-
-  /* TOP PRODUCTOS */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow); }
-  .panel-title { font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 14px; }
-  .prod-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border2); }
-  .prod-row:last-child { border-bottom: none; }
-  .prod-rank { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--text-dim); width: 16px; text-align: right; flex-shrink: 0; }
-  .prod-bar-wrap { flex: 1; min-width: 0; }
-  .prod-name { font-size: 0.73rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .prod-bar { height: 3px; background: var(--border); border-radius: 2px; position: relative; }
-  .prod-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 2px; transition: width 0.8s ease; }
-  .prod-qty { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--accent); flex-shrink: 0; text-align: right; min-width: 70px; }
-
-  /* SPINNER OVERLAY */
-  #overlay { display: none; position: fixed; inset: 0; background: rgba(245,244,241,0.85); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-  #overlay.show { display: flex; }
-  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner-text { font-size: 0.72rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; }
-
-  /* EMPTY STATE */
-  .empty { text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.8rem; font-family: 'Sora', sans-serif; }
-
-  @media (max-width: 900px) {
-    header { padding: 14px 20px; flex-wrap: wrap; }
-    main { padding: 18px; }
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .two-col { grid-template-columns: 1fr; }
-  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--text);min-height:100vh}
+  header{background:var(--text);color:#fff;padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  header h1{font-size:15px;font-weight:500;letter-spacing:.05em;font-family:'IBM Plex Mono',monospace}
+  header span{font-size:12px;opacity:.5;font-family:'IBM Plex Mono',monospace}
+  #sub{font-size:11px;opacity:.6;font-family:'IBM Plex Mono',monospace}
+  .main{max-width:1200px;margin:0 auto;padding:1.5rem}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+  .filters select,.filters input{font-size:12px;padding:6px 10px;border:1px solid var(--border);background:var(--surface);border-radius:4px;font-family:'IBM Plex Sans',sans-serif;color:var(--text)}
+  .filters input{min-width:160px}
+  .tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid var(--text)}
+  .tab{font-size:12px;padding:8px 16px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s}
+  .tab.active{color:var(--text);border-bottom-color:var(--text)}
+  .tab:hover{color:var(--text)}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:1.5rem}
+  .stat{background:var(--surface);padding:1rem 1.25rem}
+  .slabel{font-size:10px;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase}
+  .sval{font-size:22px;font-weight:500;color:var(--text);font-family:'IBM Plex Mono',monospace}
+  .chart-block{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem;margin-bottom:1rem}
+  .chart-block h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1rem}
+  .chart-wrap{position:relative;height:220px}
+  .chart-wrap.tall{height:320px}
+  .tbl-block{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:1rem}
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  thead th{background:#f0ede8;padding:8px 12px;text-align:right;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em}
+  thead th:first-child{text-align:left;position:sticky;left:0;background:#f0ede8;z-index:1}
+  tbody td{padding:7px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid #f5f4f0;font-family:'IBM Plex Mono',monospace;font-size:11px}
+  tbody tr:last-child td{border-bottom:none}
+  tbody td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;color:var(--text);font-size:12px;font-family:'IBM Plex Sans',sans-serif}
+  tbody tr:hover td{background:#fafaf8}
+  tbody tr:hover td:first-child{background:#fafaf8}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:700px){.grid2{grid-template-columns:1fr}}
+  .loading{text-align:center;padding:4rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
+  .err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6;border-radius:4px;padding:1rem;font-size:13px;margin-bottom:1rem}
+  button.reload{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 14px;font-size:11px;cursor:pointer;border-radius:3px;font-family:'IBM Plex Mono',monospace;letter-spacing:.05em}
+  button.reload:hover{background:rgba(255,255,255,0.2)}
 </style>
 </head>
 <body>
 
-<div id="overlay"><div class="spinner"></div><div class="spinner-text">CARGANDO DATOS...</div></div>
-
 <header>
-  <div class="logo-mark">PP</div>
   <div>
-    <h1>Platos Principales 2026</h1>
-    <div class="sub">Dashboard de ventas · PS Grupo</div>
+    <h1>PLATOS PRINCIPALES 2026</h1>
+    <div id="sub">Cargando...</div>
   </div>
-  <div class="header-right">
-    <span id="status" class="loading">Conectando...</span>
-    <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
-  </div>
+  <button class="reload" onclick="init()">↻ RECARGAR</button>
 </header>
 
-<main>
+<div class="main">
+  <div id="loading" class="loading">Conectando con el sheet...</div>
+  <div id="err" style="display:none" class="err"></div>
+  <div id="app" style="display:none">
 
-  <div class="sec">Resumen anual</div>
-  <div class="kpi-grid">
-    <div class="kpi"      id="kpiPlatos"><div class="kpi-label">Total platos</div><div class="kpi-value">—</div><div class="kpi-sub">Año 2026</div></div>
-    <div class="kpi gold" id="kpiNeto">  <div class="kpi-label">Neto total $</div><div class="kpi-value">—</div><div class="kpi-sub">Sin IVA</div></div>
-    <div class="kpi"      id="kpiDias">  <div class="kpi-label">Días trabajados</div><div class="kpi-value">—</div><div class="kpi-sub">Con ventas</div></div>
-    <div class="kpi"      id="kpiProm">  <div class="kpi-label">Prom. platos/día</div><div class="kpi-value">—</div><div class="kpi-sub">Promedio</div></div>
-  </div>
-
-  <div class="sec">Evolución mensual — platos vendidos</div>
-  <div class="chart-box">
-    <div class="chart-title">Platos por mes</div>
-    <div class="bars" id="barsContainer"><div class="empty">Cargando...</div></div>
-  </div>
-
-  <div class="sec">Tabla comparativa por mes — todos los clientes</div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th>Mes</th>
-        <th>Días trab.</th>
-        <th>Total platos</th>
-        <th>Prom./día</th>
-        <th>Máx. diario</th>
-        <th>Mín. diario</th>
-        <th>Total neto $</th>
-        <th>Prom. neto/día $</th>
-        <th>$/plato</th>
-      </tr></thead>
-      <tbody id="tablaGeneralBody"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
-      <tfoot id="tablaGeneralFoot"></tfoot>
-    </table>
-  </div>
-
-  <div class="sec">Consumo interno — clientes Petrosar</div>
-  <div class="petrosar-box">
-    <div class="petrosar-header">
-      🏭 Consumo Interno <span class="pico">PETROSAR</span>
-      <span style="font-size:0.67rem;font-weight:400;opacity:0.85">· clientes cuyo nombre contiene "Petrosar"</span>
+    <div class="filters">
+      <select id="f-periodo" onchange="applyFilters()"><option value="">Todos los períodos</option></select>
+      <select id="f-rubro" onchange="applyFilters()"><option value="">Todos los rubros</option></select>
+      <select id="f-cliente" onchange="applyFilters()"><option value="">Todos los clientes</option></select>
+      <input type="text" id="f-search" placeholder="Buscar producto..." oninput="applyFilters()">
     </div>
-    <div class="table-wrap" style="border:none;border-radius:0;box-shadow:none">
-      <table>
-        <thead class="ptr"><tr>
-          <th>Mes</th>
-          <th>Días trab.</th>
-          <th>Total platos</th>
-          <th>Prom./día</th>
-          <th>Total neto $</th>
-          <th>Prom. neto/día $</th>
-          <th>$/plato</th>
-        </tr></thead>
-        <tbody id="tablaPetrosarBody"><tr><td colspan="7" class="empty">Cargando...</td></tr></tbody>
-        <tfoot id="tablaPetrosarFoot"></tfoot>
-      </table>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('resumen',this)">RESUMEN</button>
+      <button class="tab" onclick="showTab('productos',this)">POR PRODUCTO</button>
+      <button class="tab" onclick="showTab('clientes',this)">POR CLIENTE</button>
+      <button class="tab" onclick="showTab('periodo',this)">POR PERÍODO</button>
     </div>
-  </div>
 
-  <div class="sec">Ranking de productos — acumulado anual</div>
-  <div class="two-col">
-    <div class="panel"><div class="panel-title">Top 10 por cantidad</div><div id="topQty"><div class="empty">—</div></div></div>
-    <div class="panel"><div class="panel-title">Top 10 por neto $</div><div id="topNeto"><div class="empty">—</div></div></div>
-  </div>
+    <!-- RESUMEN -->
+    <div id="tab-resumen">
+      <div class="stat-grid" id="stats"></div>
+      <div class="grid2">
+        <div class="chart-block"><h3>Neto por período</h3><div class="chart-wrap"><canvas id="c-periodo"></canvas></div></div>
+        <div class="chart-block"><h3>Top 10 productos por cantidad</h3><div class="chart-wrap"><canvas id="c-productos"></canvas></div></div>
+      </div>
+    </div>
 
-</main>
+    <!-- PRODUCTOS -->
+    <div id="tab-productos" style="display:none">
+      <div class="chart-block"><h3>Neto por producto (top 15)</h3><div class="chart-wrap tall"><canvas id="c-prod-neto"></canvas></div></div>
+      <div class="tbl-block">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortTbl('productos',0)">Producto ⇅</th>
+              <th onclick="sortTbl('productos',1)">Cantidad ⇅</th>
+              <th onclick="sortTbl('productos',2)">Neto ⇅</th>
+              <th onclick="sortTbl('productos',3)">IVA ⇅</th>
+              <th onclick="sortTbl('productos',4)">Sub-Total ⇅</th>
+              <th onclick="sortTbl('productos',5)">$/plato ⇅</th>
+            </tr></thead>
+            <tbody id="tb-productos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="tab-clientes" style="display:none">
+      <div class="chart-block"><h3>Neto por cliente (top 10)</h3><div class="chart-wrap"><canvas id="c-clientes"></canvas></div></div>
+      <div class="tbl-block">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortTbl('clientes',0)">Cliente ⇅</th>
+              <th onclick="sortTbl('clientes',1)">Cant ⇅</th>
+              <th onclick="sortTbl('clientes',2)">Neto ⇅</th>
+              <th onclick="sortTbl('clientes',3)">Sub-Total ⇅</th>
+            </tr></thead>
+            <tbody id="tb-clientes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERIODO -->
+    <div id="tab-periodo" style="display:none">
+      <div class="tbl-block">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="sortTbl('periodo',0)">Período ⇅</th>
+              <th onclick="sortTbl('periodo',1)">Transacciones ⇅</th>
+              <th onclick="sortTbl('periodo',2)">Platos ⇅</th>
+              <th onclick="sortTbl('periodo',3)">Neto ⇅</th>
+              <th onclick="sortTbl('periodo',4)">IVA ⇅</th>
+              <th onclick="sortTbl('periodo',5)">Sub-Total ⇅</th>
+              <th onclick="sortTbl('periodo',6)">$/plato ⇅</th>
+            </tr></thead>
+            <tbody id="tb-periodo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
-// ══════════════════════════════════════════════════
-// CONFIG — URL pública del Google Sheet
-// ══════════════════════════════════════════════════
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTgHTh_rNcYXIcG4qXLXCwSSrHtjIOdBy3u-3cR7cnMB3OiOqYs921ecjdymjXoG5F_-BEIM5IWhtzA/pub?output=csv';
-const AUTO_REFRESH_MIN = 5;
+const CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTgHTh_rNcYXIcG4qXLXCwSSrHtjIOdBy3u-3cR7cnMB3OiOqYs921ecjdymjXoG5F_-BEIM5IWhtzA/pub?gid=0&single=true&output=csv";
+const C={periodo:0,comprobante:1,fecha:2,cliente:3,rubroMayor:4,rubro:5,codigo:6,producto:7,cantidad:8,neto:9,iva:10,subtotal:11};
+const SC=['#1a5276','#0e6655','#5d3a1a','#4a235a','#7d6608','#922b21','#196f3d','#154360'];
+const LC=['#d6eaf8','#d5f5e3','#fdebd0','#e8daef','#fef9e7','#fadbd8','#d4efdf','#d6eaf8'];
 
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-let MES_ACTUAL = '';
+let raw=[],fil=[],charts={},sortSt={};
 
-// ══════════════════════════════════════════════════
-// CARGA DE DATOS DESDE SHEET
-// ══════════════════════════════════════════════════
-async function loadData() {
-  setStatus('loading', 'Actualizando...');
-  document.getElementById('overlay').classList.add('show');
-  try {
-    const resp = await fetch(CSV_URL + '&t=' + Date.now());
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const data = parseCSV(text);
-    renderDashboard(data);
-    const now = new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
-    setStatus('ok', '✓ Actualizado ' + now);
-  } catch(err) {
-    setStatus('err', '✗ Sin conexión al sheet');
-    console.error(err);
-  }
-  document.getElementById('overlay').classList.remove('show');
+function parseCSV(t){
+  return t.trim().split('\n').map(l=>{
+    const r=[];let s='';let q=false;
+    for(let c of l){if(c==='"')q=!q;else if(c===','&&!q){r.push(s.trim());s='';}else s+=c;}
+    r.push(s.trim());return r;
+  });
 }
 
-function setStatus(cls, txt) {
-  const el = document.getElementById('status');
-  el.className = cls;
-  el.textContent = txt;
+function pn(v){const n=parseFloat((v||'').toString().replace(/[$ ]/g,'').replace(',','.'));return isNaN(n)?0:n;}
+function fm(v){return v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fi(v){return Math.round(v).toLocaleString('es-AR');}
+
+function grp(data,keyFn){
+  const m=new Map();
+  data.forEach(r=>{
+    const k=keyFn(r);
+    if(!m.has(k))m.set(k,{key:k,count:0,cant:0,neto:0,iva:0,sub:0});
+    const e=m.get(k);
+    e.count++;e.cant+=pn(r[C.cantidad]);e.neto+=pn(r[C.neto]);e.iva+=pn(r[C.iva]);e.sub+=pn(r[C.subtotal]);
+  });
+  return[...m.values()];
 }
 
-// ══════════════════════════════════════════════════
-// PARSER CSV
-// ══════════════════════════════════════════════════
-function parseNum(s) {
-  if (!s) return 0;
-  s = s.trim().replace(/"/g,'').replace(/\./g,'').replace(',','.');
-  return parseFloat(s) || 0;
-}
-
-function parseRow(line) {
-  const cols = []; let cur = ''; let inQ = false;
-  for (const c of line) {
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { cols.push(cur); cur = ''; }
-    else { cur += c; }
-  }
-  cols.push(cur);
-  return cols;
-}
-
-function parseCSV(text) {
-  const lines = text.split('\n');
-  const months = {}, petrosar = {}, products = {};
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const cols = parseRow(line);
-    if (cols.length < 12) continue;
-
-    const periodo  = cols[0].trim();
-    const fecha    = cols[2].trim();
-    const cliente  = cols[3].trim();
-    const producto = cols[7].trim();
-    const cantidad = parseInt(cols[8]) || 0;
-    const neto     = parseNum(cols[9]);
-
-    if (!periodo || !producto || cantidad <= 0) continue;
-
-    // Clave única de día (día-mes)
-    const parts  = fecha.split('/');
-    const dayKey = parts.length >= 2 ? `${parts[0].trim()}-${parts[1].trim()}` : fecha.slice(0,5);
-
-    // Todos los clientes
-    if (!months[periodo]) months[periodo] = { cantidad:0, neto:0, dias:{} };
-    months[periodo].cantidad += cantidad;
-    months[periodo].neto     += neto;
-    if (!months[periodo].dias[dayKey]) months[periodo].dias[dayKey] = { qty:0, neto:0 };
-    months[periodo].dias[dayKey].qty  += cantidad;
-    months[periodo].dias[dayKey].neto += neto;
-
-    // Solo Petrosar
-    if (cliente.toUpperCase().includes('PETROSAR')) {
-      if (!petrosar[periodo]) petrosar[periodo] = { cantidad:0, neto:0, dias:{} };
-      petrosar[periodo].cantidad += cantidad;
-      petrosar[periodo].neto     += neto;
-      if (!petrosar[periodo].dias[dayKey]) petrosar[periodo].dias[dayKey] = { qty:0, neto:0 };
-      petrosar[periodo].dias[dayKey].qty  += cantidad;
-      petrosar[periodo].dias[dayKey].neto += neto;
+function mkChart(id,type,labels,datasets,opts={}){
+  if(charts[id])charts[id].destroy();
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx)return;
+  charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:opts.legend||false,position:'bottom',labels:{font:{size:10,family:"'IBM Plex Mono'"},boxWidth:10}}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10,family:"'IBM Plex Mono'"},maxRotation:45}},
+      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:"'IBM Plex Mono'"},callback:v=>v>=1000?'$'+Math.round(v/1000)+'k':'$'+v,...(opts.yCallback?{callback:opts.yCallback}:{})}}
     }
+  }});
+}
 
-    // Productos
-    if (!products[producto]) products[producto] = { cantidad:0, neto:0 };
-    products[producto].cantidad += cantidad;
-    products[producto].neto     += neto;
+function buildFilters(){
+  const periodos=[...new Set(raw.map(r=>r[C.periodo]))].sort();
+  const rubros=[...new Set(raw.map(r=>r[C.rubroMayor]))].sort();
+  const clientes=[...new Set(raw.map(r=>r[C.cliente]))].sort();
+  document.getElementById('f-periodo').innerHTML='<option value="">Todos los períodos</option>'+periodos.map(p=>`<option>${p}</option>`).join('');
+  document.getElementById('f-rubro').innerHTML='<option value="">Todos los rubros</option>'+rubros.map(r=>`<option>${r}</option>`).join('');
+  document.getElementById('f-cliente').innerHTML='<option value="">Todos los clientes</option>'+clientes.map(c=>`<option>${c}</option>`).join('');
+}
+
+function applyFilters(){
+  const fp=document.getElementById('f-periodo').value;
+  const fr=document.getElementById('f-rubro').value;
+  const fc=document.getElementById('f-cliente').value;
+  const fs=document.getElementById('f-search').value.toLowerCase();
+  fil=raw.filter(r=>{
+    if(fp&&r[C.periodo]!==fp)return false;
+    if(fr&&r[C.rubroMayor]!==fr)return false;
+    if(fc&&r[C.cliente]!==fc)return false;
+    if(fs&&!(r[C.producto]||'').toLowerCase().includes(fs))return false;
+    return true;
+  });
+  renderAll();
+}
+
+function renderStats(){
+  const tot=fil.reduce((a,r)=>({cant:a.cant+pn(r[C.cantidad]),neto:a.neto+pn(r[C.neto]),iva:a.iva+pn(r[C.iva]),sub:a.sub+pn(r[C.subtotal])}),{cant:0,neto:0,iva:0,sub:0});
+  const prods=new Set(fil.map(r=>r[C.producto])).size;
+  const clts=new Set(fil.map(r=>r[C.cliente])).size;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="slabel">Transacciones</div><div class="sval">${fi(fil.length)}</div></div>
+    <div class="stat"><div class="slabel">Total platos</div><div class="sval">${fi(tot.cant)}</div></div>
+    <div class="stat"><div class="slabel">Neto</div><div class="sval">$${fi(tot.neto)}</div></div>
+    <div class="stat"><div class="slabel">Sub-Total</div><div class="sval">$${fi(tot.sub)}</div></div>
+    <div class="stat"><div class="slabel">Productos</div><div class="sval">${prods}</div></div>
+    <div class="stat"><div class="slabel">Clientes</div><div class="sval">${clts}</div></div>`;
+}
+
+function renderResumen(){
+  const byP=grp(fil,r=>r[C.periodo]).sort((a,b)=>a.key.localeCompare(b.key));
+  mkChart('c-periodo','bar',byP.map(d=>d.key),[{label:'Neto',data:byP.map(d=>d.neto),backgroundColor:LC[0],borderColor:SC[0],borderWidth:1.5,borderRadius:3}]);
+  const byProd=grp(fil,r=>r[C.producto]).sort((a,b)=>b.cant-a.cant).slice(0,10);
+  mkChart('c-productos','bar',byProd.map(d=>d.key.length>18?d.key.slice(0,18)+'…':d.key),[{label:'Cantidad',data:byProd.map(d=>d.cant),backgroundColor:LC[1],borderColor:SC[1],borderWidth:1.5,borderRadius:3}],{yCallback:v=>v});
+}
+
+function renderProductos(){
+  const byProd=grp(fil,r=>r[C.producto]).sort((a,b)=>b.neto-a.neto);
+  const top=byProd.slice(0,15);
+  mkChart('c-prod-neto','bar',top.map(d=>d.key.length>20?d.key.slice(0,20)+'…':d.key),[{
+    label:'Neto',data:top.map(d=>d.neto),
+    backgroundColor:top.map((_,i)=>LC[i%LC.length]),
+    borderColor:top.map((_,i)=>SC[i%SC.length]),
+    borderWidth:1.5,borderRadius:3
+  }]);
+  document.getElementById('tb-productos').innerHTML=byProd.map(d=>`<tr>
+    <td>${d.key}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.iva)}</td><td>$${fm(d.sub)}</td><td>$${fm(d.cant?d.neto/d.cant:0)}</td>
+  </tr>`).join('');
+}
+
+function renderClientes(){
+  const byClt=grp(fil,r=>r[C.cliente]).sort((a,b)=>b.neto-a.neto);
+  const top=byClt.slice(0,10);
+  mkChart('c-clientes','bar',top.map(d=>d.key.length>25?d.key.slice(0,25)+'…':d.key),[{
+    label:'Neto',data:top.map(d=>d.neto),
+    backgroundColor:top.map((_,i)=>LC[i%LC.length]),
+    borderColor:top.map((_,i)=>SC[i%SC.length]),
+    borderWidth:1.5,borderRadius:3
+  }]);
+  document.getElementById('tb-clientes').innerHTML=byClt.map(d=>`<tr>
+    <td>${d.key}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.sub)}</td>
+  </tr>`).join('');
+}
+
+function renderPeriodo(){
+  const byP=grp(fil,r=>r[C.periodo]).sort((a,b)=>a.key.localeCompare(b.key));
+  document.getElementById('tb-periodo').innerHTML=byP.map(d=>`<tr>
+    <td>${d.key}</td><td>${fi(d.count)}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.iva)}</td><td>$${fm(d.sub)}</td><td>$${fm(d.cant?d.neto/d.cant:0)}</td>
+  </tr>`).join('');
+}
+
+function renderAll(){
+  renderStats();
+  const at=document.querySelector('.tab.active')?.textContent.trim();
+  if(at==='RESUMEN')renderResumen();
+  else if(at==='POR PRODUCTO')renderProductos();
+  else if(at==='POR CLIENTE')renderClientes();
+  else if(at==='POR PERÍODO')renderPeriodo();
+}
+
+function showTab(name,btn){
+  ['resumen','productos','clientes','periodo'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'block':'none');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
+
+function sortTbl(tid,col){
+  const tbody=document.getElementById('tb-'+tid);
+  const rows=[...tbody.querySelectorAll('tr')];
+  const key=tid+col;
+  const asc=sortSt[key]!==true;
+  sortSt[key]=asc;
+  rows.sort((a,b)=>{
+    const av=(a.cells[col]?.textContent||'').replace(/[$.,]/g,'').trim();
+    const bv=(b.cells[col]?.textContent||'').replace(/[$.,]/g,'').trim();
+    const an=parseFloat(av),bn=parseFloat(bv);
+    if(!isNaN(an)&&!isNaN(bn))return asc?an-bn:bn-an;
+    return asc?av.localeCompare(bv):bv.localeCompare(av);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+}
+
+async function init(){
+  document.getElementById('loading').style.display='block';
+  document.getElementById('app').style.display='none';
+  document.getElementById('err').style.display='none';
+  try{
+    const res=await fetch(CSV_URL);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const txt=await res.text();
+    const rows=parseCSV(txt);
+    raw=rows.slice(1).filter(r=>r.some(c=>c.trim()));
+    fil=[...raw];
+    const periodos=new Set(raw.map(r=>r[C.periodo])).size;
+    document.getElementById('sub').textContent=raw.length.toLocaleString('es-AR')+' REGISTROS · '+periodos+' PERÍODOS';
+    buildFilters();renderAll();
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    const eb=document.getElementById('err');
+    eb.style.display='block';
+    eb.textContent='Error al cargar: '+e.message+'. Verificá que el sheet esté publicado como CSV.';
   }
-
-  MES_ACTUAL = Object.keys(months).sort().pop() || '';
-  return { months, petrosar, products };
 }
-
-// ══════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════
-function calcStats(m) {
-  const diasArr = Object.values(m.dias);
-  const dias = diasArr.length;
-  const qtys = diasArr.map(d => d.qty);
-  return {
-    dias,
-    cantidad: m.cantidad,
-    neto:     m.neto,
-    promQty:  dias ? Math.round(m.cantidad / dias) : 0,
-    maxQty:   dias ? Math.max(...qtys) : 0,
-    minQty:   dias ? Math.min(...qtys) : 0,
-    promNeto: dias ? Math.round(m.neto / dias) : 0,
-    precProm: m.cantidad ? Math.round(m.neto / m.cantidad) : 0,
-  };
-}
-
-function fmt(n)  { return '$\u202f' + Math.round(n).toLocaleString('es-AR'); }
-function num(v)  { return Number(v).toLocaleString('es-AR'); }
-function mesNom(p) { return MESES[parseInt(p.split('/')[1])-1] || p; }
-
-// ══════════════════════════════════════════════════
-// RENDER
-// ══════════════════════════════════════════════════
-function renderDashboard({ months, petrosar, products }) {
-  const periodos = Object.keys(months).sort();
-
-  // KPIs
-  let tp=0, tn=0, td=0;
-  periodos.forEach(p => { const s=calcStats(months[p]); tp+=s.cantidad; tn+=s.neto; td+=s.dias; });
-  setKPI('kpiPlatos', num(tp), 'Total año 2026');
-  setKPI('kpiNeto',   fmt(tn), 'Sin IVA');
-  setKPI('kpiDias',   num(td), 'Días con ventas');
-  setKPI('kpiProm',   td ? num(Math.round(tp/td)) : '—', 'Platos por día');
-
-  // Chart
-  const maxQ = Math.max(...periodos.map(p => months[p].cantidad));
-  document.getElementById('barsContainer').innerHTML = periodos.map(p => {
-    const s = calcStats(months[p]);
-    const pct = maxQ ? (s.cantidad / maxQ * 100).toFixed(1) : 0;
-    const cur = p === MES_ACTUAL;
-    return `<div class="bar-group">
-      <div class="bar-top">${num(s.cantidad)}</div>
-      <div class="bar-fill${cur?' cur':''}" style="height:${pct}%"></div>
-      <div class="bar-bot">${mesNom(p)}<br><span style="font-size:0.57rem">${s.dias} días</span></div>
-    </div>`;
-  }).join('');
-
-  // Tabla general
-  let tg = {dias:0, cantidad:0, neto:0};
-  document.getElementById('tablaGeneralBody').innerHTML = periodos.map(p => {
-    const s = calcStats(months[p]);
-    const cur = p === MES_ACTUAL;
-    tg.dias+=s.dias; tg.cantidad+=s.cantidad; tg.neto+=s.neto;
-    return `<tr class="${cur?'cur-row':''}">
-      <td>${mesNom(p)}${cur?'<span class="tag-cur">En curso</span>':''}</td>
-      <td>${s.dias}</td>
-      <td>${num(s.cantidad)}</td>
-      <td>${num(s.promQty)}</td>
-      <td>${num(s.maxQty)}</td>
-      <td>${num(s.minQty)}</td>
-      <td>${fmt(s.neto)}</td>
-      <td>${fmt(s.promNeto)}</td>
-      <td>${fmt(s.precProm)}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('tablaGeneralFoot').innerHTML = tg.dias ? `<tr>
-    <td>TOTAL / PROMEDIO</td>
-    <td>${num(tg.dias)}</td>
-    <td>${num(tg.cantidad)}</td>
-    <td>${num(Math.round(tg.cantidad/tg.dias))}</td>
-    <td>—</td><td>—</td>
-    <td>${fmt(tg.neto)}</td>
-    <td>${fmt(Math.round(tg.neto/tg.dias))}</td>
-    <td>${fmt(Math.round(tg.neto/tg.cantidad))}</td>
-  </tr>` : '';
-
-  // Tabla Petrosar
-  const perP = Object.keys(petrosar).sort();
-  let tp2 = {dias:0, cantidad:0, neto:0};
-  if (!perP.length) {
-    document.getElementById('tablaPetrosarBody').innerHTML = `<tr><td colspan="7" class="empty">No se encontraron clientes "Petrosar" en los datos</td></tr>`;
-  } else {
-    document.getElementById('tablaPetrosarBody').innerHTML = perP.map(p => {
-      const s = calcStats(petrosar[p]);
-      const cur = p === MES_ACTUAL;
-      tp2.dias+=s.dias; tp2.cantidad+=s.cantidad; tp2.neto+=s.neto;
-      return `<tr class="${cur?'cur-row':''}">
-        <td>${mesNom(p)}${cur?'<span class="tag-cur">En curso</span>':''}</td>
-        <td>${s.dias}</td>
-        <td>${num(s.cantidad)}</td>
-        <td>${num(s.promQty)}</td>
-        <td>${fmt(s.neto)}</td>
-        <td>${fmt(s.promNeto)}</td>
-        <td>${fmt(s.precProm)}</td>
-      </tr>`;
-    }).join('');
-    document.getElementById('tablaPetrosarFoot').innerHTML = tp2.dias ? `<tr>
-      <td>TOTAL / PROMEDIO</td>
-      <td>${num(tp2.dias)}</td>
-      <td>${num(tp2.cantidad)}</td>
-      <td>${num(Math.round(tp2.cantidad/tp2.dias))}</td>
-      <td>${fmt(tp2.neto)}</td>
-      <td>${fmt(Math.round(tp2.neto/tp2.dias))}</td>
-      <td>${fmt(Math.round(tp2.neto/tp2.cantidad))}</td>
-    </tr>` : '';
-  }
-
-  // Top productos
-  const pa = Object.entries(products);
-  document.getElementById('topQty').innerHTML  = renderTop([...pa].sort((a,b)=>b[1].cantidad-a[1].cantidad).slice(0,10), 'cantidad', v=>num(v)+' u.');
-  document.getElementById('topNeto').innerHTML = renderTop([...pa].sort((a,b)=>b[1].neto-a[1].neto).slice(0,10), 'neto', v=>fmt(v));
-}
-
-function renderTop(items, field, fmtFn) {
-  if (!items.length) return '<div class="empty">Sin datos</div>';
-  const max = items[0][1][field];
-  return items.map(([nom,vals],i) => `
-    <div class="prod-row">
-      <div class="prod-rank">${i+1}</div>
-      <div class="prod-bar-wrap">
-        <div class="prod-name">${nom}</div>
-        <div class="prod-bar"><div class="prod-bar-fill" style="width:${(vals[field]/max*100).toFixed(1)}%"></div></div>
-      </div>
-      <div class="prod-qty">${fmtFn(vals[field])}</div>
-    </div>`).join('');
-}
-
-function setKPI(id, val, sub) {
-  const el = document.getElementById(id);
-  el.querySelector('.kpi-value').textContent = val;
-  el.querySelector('.kpi-sub').textContent   = sub;
-}
-
-// ══════════════════════════════════════════════════
-// INICIO Y AUTO-REFRESH
-// ══════════════════════════════════════════════════
-loadData();
-setInterval(loadData, AUTO_REFRESH_MIN * 60 * 1000);
+init();
 </script>
 </body>
 </html>
