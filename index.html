@@ -3,163 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Platos Principales 2026</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<title>PETROSAR — Platos Principales 2026</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
-  :root{
-    --bg:#f5f4f0;--surface:#fff;--border:#e0ddd6;--text:#1a1a18;--muted:#888;
-    --accent:#1a5276;--accent2:#0e6655;--accent3:#5d3a1a;
-    --c1:#1a5276;--c2:#0e6655;--c3:#5d3a1a;--c4:#4a235a;--c5:#7d6608;
-    --l1:#d6eaf8;--l2:#d5f5e3;--l3:#fdebd0;--l4:#e8daef;--l5:#fef9e7;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--text);min-height:100vh}
-  header{background:var(--text);color:#fff;padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-  header h1{font-size:15px;font-weight:500;letter-spacing:.05em;font-family:'IBM Plex Mono',monospace}
-  header span{font-size:12px;opacity:.5;font-family:'IBM Plex Mono',monospace}
-  #sub{font-size:11px;opacity:.6;font-family:'IBM Plex Mono',monospace}
-  .main{max-width:1200px;margin:0 auto;padding:1.5rem}
-  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
-  .filters select,.filters input{font-size:12px;padding:6px 10px;border:1px solid var(--border);background:var(--surface);border-radius:4px;font-family:'IBM Plex Sans',sans-serif;color:var(--text)}
-  .filters input{min-width:160px}
-  .tabs{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid var(--text)}
-  .tab{font-size:12px;padding:8px 16px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s}
-  .tab.active{color:var(--text);border-bottom-color:var(--text)}
-  .tab:hover{color:var(--text)}
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:1.5rem}
-  .stat{background:var(--surface);padding:1rem 1.25rem}
-  .slabel{font-size:10px;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase}
-  .sval{font-size:22px;font-weight:500;color:var(--text);font-family:'IBM Plex Mono',monospace}
-  .chart-block{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem;margin-bottom:1rem}
-  .chart-block h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1rem}
-  .chart-wrap{position:relative;height:220px}
-  .chart-wrap.tall{height:320px}
-  .tbl-block{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:1rem}
-  .tbl-wrap{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;font-size:12px}
-  thead th{background:#f0ede8;padding:8px 12px;text-align:right;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em}
-  thead th:first-child{text-align:left;position:sticky;left:0;background:#f0ede8;z-index:1}
-  tbody td{padding:7px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid #f5f4f0;font-family:'IBM Plex Mono',monospace;font-size:11px}
-  tbody tr:last-child td{border-bottom:none}
-  tbody td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;color:var(--text);font-size:12px;font-family:'IBM Plex Sans',sans-serif}
-  tbody tr:hover td{background:#fafaf8}
-  tbody tr:hover td:first-child{background:#fafaf8}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-  @media(max-width:700px){.grid2{grid-template-columns:1fr}}
-  .loading{text-align:center;padding:4rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
-  .err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6;border-radius:4px;padding:1rem;font-size:13px;margin-bottom:1rem}
-  button.reload{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 14px;font-size:11px;cursor:pointer;border-radius:3px;font-family:'IBM Plex Mono',monospace;letter-spacing:.05em}
-  button.reload:hover{background:rgba(255,255,255,0.2)}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#f0ede8;--surface:#fff;--border:#ddd9d2;--text:#1a1a18;--muted:#888;
+  --blue-dark:#1a3a5c;--blue-mid:#1a5276;--blue-light:#d6eaf8;
+  --brown-dark:#4a2c0a;--brown-mid:#7d4e1a;--brown-light:#fdebd0;
+  --green-dark:#0a4a2c;--green-mid:#1a7a4a;--green-light:#d5f5e3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--text);min-height:100vh}
+
+/* HEADER */
+header{background:var(--blue-dark);color:#fff;padding:0}
+.header-top{padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.header-brand{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;font-family:'IBM Plex Mono',monospace;margin-bottom:4px}
+.header-title{font-size:18px;font-weight:600;letter-spacing:.02em}
+.header-sub{font-size:11px;opacity:.5;font-family:'IBM Plex Mono',monospace;margin-top:3px}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button.btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:7px 14px;font-size:11px;cursor:pointer;border-radius:3px;font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;transition:background .15s}
+button.btn:hover{background:rgba(255,255,255,0.2)}
+.header-months{padding:.75rem 2rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.header-months span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.5;font-family:'IBM Plex Mono',monospace;margin-right:4px}
+.mbtn{font-size:11px;padding:4px 10px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.mbtn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.mbtn.active{background:#fff;color:var(--blue-dark);border-color:#fff;font-weight:500}
+
+/* MAIN */
+.main{max-width:1300px;margin:0 auto;padding:1.5rem}
+
+/* LOADING / ERROR */
+.loading{text-align:center;padding:4rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
+.err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6;border-radius:4px;padding:1rem;font-size:13px;margin-bottom:1rem}
+
+/* RESUMEN SECTION */
+.section-block{margin-bottom:1.5rem;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07)}
+.section-title{padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:8px}
+.section-title .tri{font-size:8px;opacity:.7}
+.sec-general .section-title{background:var(--blue-dark);color:#fff}
+.sec-externa .section-title{background:var(--blue-mid);color:#fff}
+.sec-interna .section-title{background:var(--brown-dark);color:#fff}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface)}
+thead th{background:#f7f5f1;padding:9px 14px;text-align:right;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em}
+thead th:first-child{text-align:left;min-width:220px;position:sticky;left:0;background:#f7f5f1;z-index:1;border-right:1px solid var(--border)}
+tbody tr{border-bottom:1px solid #f5f3ef}
+tbody tr:last-child{border-bottom:none}
+tbody tr.separator{border-top:2px solid var(--border)}
+tbody td{padding:8px 14px;text-align:right;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)}
+tbody td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#444;border-right:1px solid #f0ede8;padding-left:16px}
+tbody tr:hover td{background:#fafaf8}
+tbody tr:hover td:first-child{background:#fafaf8}
+td.zero{color:#ccc}
+td.neg{color:#c0392b}
+
+/* TOTALES row */
+tr.tot-row td{font-weight:600;background:#f7f5f1 !important;border-top:1px solid var(--border);color:var(--text) !important}
+tr.tot-row td:first-child{background:#f7f5f1 !important}
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <h1>PLATOS PRINCIPALES 2026</h1>
-    <div id="sub">Cargando...</div>
+  <div class="header-top">
+    <div>
+      <div class="header-brand">PETROSAR · Servicios de Alimentación</div>
+      <div class="header-title">Resumen Comparativo — Platos Principales</div>
+      <div class="header-sub" id="sub">Cargando datos...</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" onclick="init()">↻ RECARGAR</button>
+    </div>
   </div>
-  <button class="reload" onclick="init()">↻ RECARGAR</button>
+  <div class="header-months" id="month-strip">
+    <span>Mes:</span>
+  </div>
 </header>
 
 <div class="main">
   <div id="loading" class="loading">Conectando con el sheet...</div>
   <div id="err" style="display:none" class="err"></div>
-  <div id="app" style="display:none">
-
-    <div class="filters">
-      <select id="f-periodo" onchange="applyFilters()"><option value="">Todos los períodos</option></select>
-      <select id="f-rubro" onchange="applyFilters()"><option value="">Todos los rubros</option></select>
-      <select id="f-cliente" onchange="applyFilters()"><option value="">Todos los clientes</option></select>
-      <input type="text" id="f-search" placeholder="Buscar producto..." oninput="applyFilters()">
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" onclick="showTab('resumen',this)">RESUMEN</button>
-      <button class="tab" onclick="showTab('productos',this)">POR PRODUCTO</button>
-      <button class="tab" onclick="showTab('clientes',this)">POR CLIENTE</button>
-      <button class="tab" onclick="showTab('periodo',this)">POR PERÍODO</button>
-    </div>
-
-    <!-- RESUMEN -->
-    <div id="tab-resumen">
-      <div class="stat-grid" id="stats"></div>
-      <div class="grid2">
-        <div class="chart-block"><h3>Neto por período</h3><div class="chart-wrap"><canvas id="c-periodo"></canvas></div></div>
-        <div class="chart-block"><h3>Top 10 productos por cantidad</h3><div class="chart-wrap"><canvas id="c-productos"></canvas></div></div>
-      </div>
-    </div>
-
-    <!-- PRODUCTOS -->
-    <div id="tab-productos" style="display:none">
-      <div class="chart-block"><h3>Neto por producto (top 15)</h3><div class="chart-wrap tall"><canvas id="c-prod-neto"></canvas></div></div>
-      <div class="tbl-block">
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr>
-              <th onclick="sortTbl('productos',0)">Producto ⇅</th>
-              <th onclick="sortTbl('productos',1)">Cantidad ⇅</th>
-              <th onclick="sortTbl('productos',2)">Neto ⇅</th>
-              <th onclick="sortTbl('productos',3)">IVA ⇅</th>
-              <th onclick="sortTbl('productos',4)">Sub-Total ⇅</th>
-              <th onclick="sortTbl('productos',5)">$/plato ⇅</th>
-            </tr></thead>
-            <tbody id="tb-productos"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- CLIENTES -->
-    <div id="tab-clientes" style="display:none">
-      <div class="chart-block"><h3>Neto por cliente (top 10)</h3><div class="chart-wrap"><canvas id="c-clientes"></canvas></div></div>
-      <div class="tbl-block">
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr>
-              <th onclick="sortTbl('clientes',0)">Cliente ⇅</th>
-              <th onclick="sortTbl('clientes',1)">Cant ⇅</th>
-              <th onclick="sortTbl('clientes',2)">Neto ⇅</th>
-              <th onclick="sortTbl('clientes',3)">Sub-Total ⇅</th>
-            </tr></thead>
-            <tbody id="tb-clientes"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- PERIODO -->
-    <div id="tab-periodo" style="display:none">
-      <div class="tbl-block">
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr>
-              <th onclick="sortTbl('periodo',0)">Período ⇅</th>
-              <th onclick="sortTbl('periodo',1)">Transacciones ⇅</th>
-              <th onclick="sortTbl('periodo',2)">Platos ⇅</th>
-              <th onclick="sortTbl('periodo',3)">Neto ⇅</th>
-              <th onclick="sortTbl('periodo',4)">IVA ⇅</th>
-              <th onclick="sortTbl('periodo',5)">Sub-Total ⇅</th>
-              <th onclick="sortTbl('periodo',6)">$/plato ⇅</th>
-            </tr></thead>
-            <tbody id="tb-periodo"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div>
+  <div id="app" style="display:none"></div>
 </div>
 
 <script>
 const CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTgHTh_rNcYXIcG4qXLXCwSSrHtjIOdBy3u-3cR7cnMB3OiOqYs921ecjdymjXoG5F_-BEIM5IWhtzA/pub?gid=0&single=true&output=csv";
+
+// Ajustá estos índices según las columnas reales del sheet
 const C={periodo:0,comprobante:1,fecha:2,cliente:3,rubroMayor:4,rubro:5,codigo:6,producto:7,cantidad:8,neto:9,iva:10,subtotal:11};
-const SC=['#1a5276','#0e6655','#5d3a1a','#4a235a','#7d6608','#922b21','#196f3d','#154360'];
-const LC=['#d6eaf8','#d5f5e3','#fdebd0','#e8daef','#fef9e7','#fadbd8','#d4efdf','#d6eaf8'];
 
-let raw=[],fil=[],charts={},sortSt={};
+let raw=[], visMonths=null, allMonths=[];
 
+// ── PARSERS ────────────────────────────────────────────────────────────────
 function parseCSV(t){
   return t.trim().split('\n').map(l=>{
     const r=[];let s='';let q=false;
@@ -167,162 +105,225 @@ function parseCSV(t){
     r.push(s.trim());return r;
   });
 }
-
-function pn(v){const n=parseFloat((v||'').toString().replace(/[$ ]/g,'').replace(',','.'));return isNaN(n)?0:n;}
-function fm(v){return v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function fi(v){return Math.round(v).toLocaleString('es-AR');}
-
-// Detecta nota de crédito: comprobante contiene "NC" o cantidad es negativa
+function pn(v){const n=parseFloat((v||'').toString().replace(/[$. ]/g,'').replace(',','.'));return isNaN(n)?0:n;}
 function isNC(r){
   const comp=(r[C.comprobante]||'').toString().toUpperCase();
-  const nc=comp.includes('NC')||comp.startsWith('N/C')||comp.startsWith('N.C');
-  const negQty=pn(r[C.cantidad])<0;
-  return nc||negQty;
+  // Detecta: "B NC-...", "NC-...", "N/C", "N.C", o cantidad negativa
+  return /\bNC[-\s]/.test(comp)||comp.includes('N/C')||comp.includes('N.C')||pn(r[C.cantidad])<0;
 }
-// Devuelve el valor con el signo correcto según si es NC
 function signed(r,col){const v=Math.abs(pn(r[col]));return isNC(r)?-v:v;}
 
-function grp(data,keyFn){
-  const m=new Map();
-  data.forEach(r=>{
-    const k=keyFn(r);
-    if(!m.has(k))m.set(k,{key:k,count:0,ncCount:0,cant:0,neto:0,iva:0,sub:0});
-    const e=m.get(k);
-    e.count++;
-    if(isNC(r))e.ncCount++;
-    e.cant+=signed(r,C.cantidad);
-    e.neto+=signed(r,C.neto);
-    e.iva+=signed(r,C.iva);
-    e.sub+=signed(r,C.subtotal);
+// Extrae fecha como objeto Date desde string dd/mm/yyyy o similar
+function parseDate(str){
+  if(!str)return null;
+  // Quitar la parte de hora si existe: "5/1/2026 8:30:00" → "5/1/2026"
+  const s=str.trim().split(' ')[0].split('T')[0];
+  let d;
+  // M/D/YYYY o MM/DD/YYYY (formato americano del sheet)
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const parts=s.split('/');
+    const mm=parseInt(parts[0]),dd=parseInt(parts[1]),yy=parseInt(parts[2]);
+    d=new Date(yy,mm-1,dd);
+  }
+  else if(/^\d{2}-\d{2}-\d{4}$/.test(s)){const[dd,mm,yy]=s.split('-');d=new Date(yy,mm-1,dd);}
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(s)){d=new Date(s);}
+  else d=new Date(s);
+  return isNaN(d)?null:d;
+}
+
+// Devuelve "Enero 2026" etc desde una fecha
+function monthLabel(d){
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return meses[d.getMonth()]+' '+d.getFullYear();
+}
+function monthKey(d){return d.getFullYear()*100+(d.getMonth()+1);}// 202601, 202602...
+
+// ── AGRUPAR ────────────────────────────────────────────────────────────────
+// Detecta la sección de cada fila según rubroMayor
+function getSeccion(r){
+  const rm=(r[C.rubroMayor]||'').toString().toLowerCase();
+  if(rm.includes('interno')||rm.includes('petrosar'))return'interna';
+  if(rm.includes('externo'))return'externa';
+  return'externa'; // default
+}
+
+// Calcula métricas para un conjunto de filas filtradas por mes/sección
+function calcMetrics(rows){
+  if(!rows.length)return null;
+  // días únicos con ventas
+  const diasSet=new Set();
+  // ventas por día para max/min
+  const ventasPorDia={};
+  let totalPlatos=0,totalNeto=0;
+
+  rows.forEach(r=>{
+    const d=parseDate(r[C.fecha]);
+    if(!d)return;
+    const dk=d.toISOString().slice(0,10);
+    diasSet.add(dk);
+    const cant=signed(r,C.cantidad);
+    const neto=signed(r,C.neto);
+    totalPlatos+=cant;
+    totalNeto+=neto;
+    ventasPorDia[dk]=(ventasPorDia[dk]||0)+cant;
   });
-  return[...m.values()];
+
+  const dias=diasSet.size;
+  const platosXDia=Object.values(ventasPorDia);
+  const maxDia=platosXDia.length?Math.max(...platosXDia):0;
+  const minDia=platosXDia.length?Math.min(...platosXDia):0;
+  const promPlatos=dias?totalPlatos/dias:0;
+  const promNeto=dias?totalNeto/dias:0;
+  const precioPromedio=totalPlatos?totalNeto/totalPlatos:0;
+
+  return{dias,totalPlatos,totalNeto,promPlatos,maxDia,minDia,promNeto,precioPromedio};
 }
 
-function mkChart(id,type,labels,datasets,opts={}){
-  if(charts[id])charts[id].destroy();
-  const ctx=document.getElementById(id)?.getContext('2d');
-  if(!ctx)return;
-  charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:opts.legend||false,position:'bottom',labels:{font:{size:10,family:"'IBM Plex Mono'"},boxWidth:10}}},
-    scales:{
-      x:{grid:{display:false},ticks:{font:{size:10,family:"'IBM Plex Mono'"},maxRotation:45}},
-      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:"'IBM Plex Mono'"},callback:v=>v>=1000?'$'+Math.round(v/1000)+'k':'$'+v,...(opts.yCallback?{callback:opts.yCallback}:{})}}
-    }
-  }});
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function fmt(v,decimals=0){
+  if(v===null||v===undefined)return'—';
+  return v.toLocaleString('es-AR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+}
+function fmtCell(v,decimals=0,prefix=''){
+  if(v===null||v===undefined)return`<td class="zero">—</td>`;
+  if(v===0)return`<td class="zero">0</td>`;
+  const neg=v<0;
+  const str=prefix+Math.abs(v).toLocaleString('es-AR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+  return`<td class="${neg?'neg':''}">${neg?'-':''}${str}</td>`;
 }
 
-function buildFilters(){
-  const periodos=[...new Set(raw.map(r=>r[C.periodo]))].sort();
-  const rubros=[...new Set(raw.map(r=>r[C.rubroMayor]))].sort();
-  const clientes=[...new Set(raw.map(r=>r[C.cliente]))].sort();
-  document.getElementById('f-periodo').innerHTML='<option value="">Todos los períodos</option>'+periodos.map(p=>`<option>${p}</option>`).join('');
-  document.getElementById('f-rubro').innerHTML='<option value="">Todos los rubros</option>'+rubros.map(r=>`<option>${r}</option>`).join('');
-  document.getElementById('f-cliente').innerHTML='<option value="">Todos los clientes</option>'+clientes.map(c=>`<option>${c}</option>`).join('');
-}
+const CONCEPTOS=[
+  {label:'Días trabajados',       key:'dias',          dec:0, prefix:''},
+  {label:'Total platos vendidos', key:'totalPlatos',   dec:0, prefix:''},
+  {label:'Promedio platos / día', key:'promPlatos',    dec:1, prefix:''},
+  {label:'Máximo diario (platos)',key:'maxDia',        dec:0, prefix:''},
+  {label:'Mínimo diario (platos)',key:'minDia',        dec:0, prefix:''},
+  {label:'Total neto ($)',        key:'totalNeto',     dec:2, prefix:'$', separator:true},
+  {label:'Promedio neto / día ($)',key:'promNeto',     dec:2, prefix:'$'},
+  {label:'Precio promedio por plato ($)',key:'precioPromedio',dec:2,prefix:'$'},
+];
 
-function applyFilters(){
-  const fp=document.getElementById('f-periodo').value;
-  const fr=document.getElementById('f-rubro').value;
-  const fc=document.getElementById('f-cliente').value;
-  const fs=document.getElementById('f-search').value.toLowerCase();
-  fil=raw.filter(r=>{
-    if(fp&&r[C.periodo]!==fp)return false;
-    if(fr&&r[C.rubroMayor]!==fr)return false;
-    if(fc&&r[C.cliente]!==fc)return false;
-    if(fs&&!(r[C.producto]||'').toLowerCase().includes(fs))return false;
-    return true;
+function renderTable(secLabel,secClass,monthsToShow,dataByMonth){
+  const months=monthsToShow;
+  let html=`<div class="section-block ${secClass}">
+    <div class="section-title"><span class="tri">▶</span>${secLabel}</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>CONCEPTO</th>
+      ${months.map(m=>`<th>${m.label.toUpperCase()}</th>`).join('')}
+    </tr></thead>
+    <tbody>`;
+
+  CONCEPTOS.forEach(c=>{
+    const sep=c.separator?'separator':'';
+    html+=`<tr class="${sep}"><td>${c.label}</td>`;
+    months.forEach(m=>{
+      const met=dataByMonth[m.key];
+      if(!met){html+=`<td class="zero">—</td>`;return;}
+      const v=met[c.key];
+      html+=fmtCell(v,c.dec,c.prefix);
+    });
+    html+=`</tr>`;
   });
-  renderAll();
+
+  html+=`</tbody></table></div></div>`;
+  return html;
 }
 
-function renderStats(){
-  const tot=fil.reduce((a,r)=>({cant:a.cant+signed(r,C.cantidad),neto:a.neto+signed(r,C.neto),iva:a.iva+signed(r,C.iva),sub:a.sub+signed(r,C.subtotal)}),{cant:0,neto:0,iva:0,sub:0});
-  const prods=new Set(fil.map(r=>r[C.producto])).size;
-  const clts=new Set(fil.map(r=>r[C.cliente])).size;
-  document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="slabel">Transacciones</div><div class="sval">${fi(fil.length)}</div></div>
-    <div class="stat"><div class="slabel">Total platos</div><div class="sval">${fi(tot.cant)}</div></div>
-    <div class="stat"><div class="slabel">Neto</div><div class="sval">$${fi(tot.neto)}</div></div>
-    <div class="stat"><div class="slabel">Sub-Total</div><div class="sval">$${fi(tot.sub)}</div></div>
-    <div class="stat"><div class="slabel">Productos</div><div class="sval">${prods}</div></div>
-    <div class="stat"><div class="slabel">Clientes</div><div class="sval">${clts}</div></div>`;
+function getVisMonths(){
+  if(visMonths===null)return allMonths;
+  return allMonths.filter(m=>m.key===visMonths);
 }
 
-function renderResumen(){
-  const byP=grp(fil,r=>r[C.periodo]).sort((a,b)=>a.key.localeCompare(b.key));
-  mkChart('c-periodo','bar',byP.map(d=>d.key),[{label:'Neto',data:byP.map(d=>d.neto),backgroundColor:LC[0],borderColor:SC[0],borderWidth:1.5,borderRadius:3}]);
-  const byProd=grp(fil,r=>r[C.producto]).sort((a,b)=>b.cant-a.cant).slice(0,10);
-  mkChart('c-productos','bar',byProd.map(d=>d.key.length>18?d.key.slice(0,18)+'…':d.key),[{label:'Cantidad',data:byProd.map(d=>d.cant),backgroundColor:LC[1],borderColor:SC[1],borderWidth:1.5,borderRadius:3}],{yCallback:v=>v});
+function render(){
+  const vis=getVisMonths();
+  // Filtrar raw por meses visibles
+  const rowsVis=raw.filter(r=>{
+    const d=parseDate(r[C.fecha]);
+    if(!d)return false;
+    const k=monthKey(d);
+    return vis.some(m=>m.key===k);
+  });
+
+  // Separar por sección
+  const externas=rowsVis.filter(r=>getSeccion(r)==='externa');
+  const internas=rowsVis.filter(r=>getSeccion(r)==='interna');
+
+  // Calcular métricas por mes para cada sección y general
+  function metricsPerMonth(rows){
+    const byMonth={};
+    vis.forEach(m=>{
+      const mRows=rows.filter(r=>{
+        const d=parseDate(r[C.fecha]);
+        return d&&monthKey(d)===m.key;
+      });
+      byMonth[m.key]=mRows.length?calcMetrics(mRows):null;
+    });
+    return byMonth;
+  }
+
+  const metExt=metricsPerMonth(externas);
+  const metInt=metricsPerMonth(internas);
+
+  // General = suma de ambas secciones
+  const metGen={};
+  vis.forEach(m=>{
+    const e=metExt[m.key],i=metInt[m.key];
+    if(!e&&!i){metGen[m.key]=null;return;}
+    const dias=new Set([
+      ...externas.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha]).toISOString().slice(0,10)),
+      ...internas.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha]).toISOString().slice(0,10)),
+    ]).size;
+    // ventas por día general
+    const allRows=rowsVis.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;});
+    const vpd={};
+    allRows.forEach(r=>{
+      const d=parseDate(r[C.fecha]);
+      if(!d)return;
+      const dk=d.toISOString().slice(0,10);
+      vpd[dk]=(vpd[dk]||0)+signed(r,C.cantidad);
+    });
+    const platosXDia=Object.values(vpd);
+    const tp=(e?e.totalPlatos:0)+(i?i.totalPlatos:0);
+    const tn=(e?e.totalNeto:0)+(i?i.totalNeto:0);
+    metGen[m.key]={
+      dias,
+      totalPlatos:tp,
+      totalNeto:tn,
+      promPlatos:dias?tp/dias:0,
+      maxDia:platosXDia.length?Math.max(...platosXDia):0,
+      minDia:platosXDia.length?Math.min(...platosXDia):0,
+      promNeto:dias?tn/dias:0,
+      precioPromedio:tp?tn/tp:0,
+    };
+  });
+
+  let html='';
+  html+=renderTable('GENERAL','sec-general',vis,metGen);
+  html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
+  html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
+
+  document.getElementById('app').innerHTML=html;
 }
 
-function renderProductos(){
-  const byProd=grp(fil,r=>r[C.producto]).sort((a,b)=>b.neto-a.neto);
-  const top=byProd.slice(0,15);
-  mkChart('c-prod-neto','bar',top.map(d=>d.key.length>20?d.key.slice(0,20)+'…':d.key),[{
-    label:'Neto',data:top.map(d=>d.neto),
-    backgroundColor:top.map((_,i)=>LC[i%LC.length]),
-    borderColor:top.map((_,i)=>SC[i%SC.length]),
-    borderWidth:1.5,borderRadius:3
-  }]);
-  document.getElementById('tb-productos').innerHTML=byProd.map(d=>`<tr>
-    <td>${d.key}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.iva)}</td><td>$${fm(d.sub)}</td><td>$${fm(d.cant?d.neto/d.cant:0)}</td>
-  </tr>`).join('');
+// ── MONTH STRIP ────────────────────────────────────────────────────────────
+function buildStrip(){
+  const strip=document.getElementById('month-strip');
+  let h=`<span>MES:</span><button class="mbtn active" onclick="setMonth(null,this)">TODOS</button>`;
+  allMonths.forEach(m=>{
+    h+=`<button class="mbtn" onclick="setMonth(${m.key},this)">${m.label.split(' ')[0].toUpperCase()}</button>`;
+  });
+  strip.innerHTML=h;
 }
 
-function renderClientes(){
-  const byClt=grp(fil,r=>r[C.cliente]).sort((a,b)=>b.neto-a.neto);
-  const top=byClt.slice(0,10);
-  mkChart('c-clientes','bar',top.map(d=>d.key.length>25?d.key.slice(0,25)+'…':d.key),[{
-    label:'Neto',data:top.map(d=>d.neto),
-    backgroundColor:top.map((_,i)=>LC[i%LC.length]),
-    borderColor:top.map((_,i)=>SC[i%SC.length]),
-    borderWidth:1.5,borderRadius:3
-  }]);
-  document.getElementById('tb-clientes').innerHTML=byClt.map(d=>`<tr>
-    <td>${d.key}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.sub)}</td>
-  </tr>`).join('');
-}
-
-function renderPeriodo(){
-  const byP=grp(fil,r=>r[C.periodo]).sort((a,b)=>a.key.localeCompare(b.key));
-  document.getElementById('tb-periodo').innerHTML=byP.map(d=>`<tr>
-    <td>${d.key}</td><td>${fi(d.count)}</td><td>${fi(d.cant)}</td><td>$${fm(d.neto)}</td><td>$${fm(d.iva)}</td><td>$${fm(d.sub)}</td><td>$${fm(d.cant?d.neto/d.cant:0)}</td>
-  </tr>`).join('');
-}
-
-function renderAll(){
-  renderStats();
-  const at=document.querySelector('.tab.active')?.textContent.trim();
-  if(at==='RESUMEN')renderResumen();
-  else if(at==='POR PRODUCTO')renderProductos();
-  else if(at==='POR CLIENTE')renderClientes();
-  else if(at==='POR PERÍODO')renderPeriodo();
-}
-
-function showTab(name,btn){
-  ['resumen','productos','clientes','periodo'].forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'block':'none');
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+function setMonth(key,btn){
+  visMonths=key;
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  renderAll();
+  render();
 }
 
-function sortTbl(tid,col){
-  const tbody=document.getElementById('tb-'+tid);
-  const rows=[...tbody.querySelectorAll('tr')];
-  const key=tid+col;
-  const asc=sortSt[key]!==true;
-  sortSt[key]=asc;
-  rows.sort((a,b)=>{
-    const av=(a.cells[col]?.textContent||'').replace(/[$.,]/g,'').trim();
-    const bv=(b.cells[col]?.textContent||'').replace(/[$.,]/g,'').trim();
-    const an=parseFloat(av),bn=parseFloat(bv);
-    if(!isNaN(an)&&!isNaN(bn))return asc?an-bn:bn-an;
-    return asc?av.localeCompare(bv):bv.localeCompare(av);
-  });
-  rows.forEach(r=>tbody.appendChild(r));
-}
-
+// ── INIT ───────────────────────────────────────────────────────────────────
 async function init(){
   document.getElementById('loading').style.display='block';
   document.getElementById('app').style.display='none';
@@ -333,17 +334,28 @@ async function init(){
     const txt=await res.text();
     const rows=parseCSV(txt);
     raw=rows.slice(1).filter(r=>r.some(c=>c.trim()));
-    fil=[...raw];
-    const periodos=new Set(raw.map(r=>r[C.periodo])).size;
-    document.getElementById('sub').textContent=raw.length.toLocaleString('es-AR')+' REGISTROS · '+periodos+' PERÍODOS';
-    buildFilters();renderAll();
+
+    // Extraer meses únicos ordenados
+    const monthMap=new Map();
+    raw.forEach(r=>{
+      const d=parseDate(r[C.fecha]);
+      if(!d)return;
+      const k=monthKey(d);
+      if(!monthMap.has(k))monthMap.set(k,{key:k,label:monthLabel(d),order:k});
+    });
+    allMonths=[...monthMap.values()].sort((a,b)=>a.key-b.key);
+
+    const periodos=allMonths.length;
+    document.getElementById('sub').textContent=raw.length.toLocaleString('es-AR')+' REGISTROS · '+periodos+' MESES';
+    buildStrip();
+    render();
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='block';
   }catch(e){
     document.getElementById('loading').style.display='none';
     const eb=document.getElementById('err');
     eb.style.display='block';
-    eb.textContent='Error al cargar: '+e.message+'. Verificá que el sheet esté publicado como CSV.';
+    eb.textContent='Error al cargar: '+e.message;
   }
 }
 init();
