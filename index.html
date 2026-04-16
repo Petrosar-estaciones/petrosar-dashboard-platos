@@ -172,13 +172,28 @@ function pn(v){const n=parseFloat((v||'').toString().replace(/[$ ]/g,'').replace
 function fm(v){return v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fi(v){return Math.round(v).toLocaleString('es-AR');}
 
+// Detecta nota de crédito: comprobante contiene "NC" o cantidad es negativa
+function isNC(r){
+  const comp=(r[C.comprobante]||'').toString().toUpperCase();
+  const nc=comp.includes('NC')||comp.startsWith('N/C')||comp.startsWith('N.C');
+  const negQty=pn(r[C.cantidad])<0;
+  return nc||negQty;
+}
+// Devuelve el valor con el signo correcto según si es NC
+function signed(r,col){const v=Math.abs(pn(r[col]));return isNC(r)?-v:v;}
+
 function grp(data,keyFn){
   const m=new Map();
   data.forEach(r=>{
     const k=keyFn(r);
-    if(!m.has(k))m.set(k,{key:k,count:0,cant:0,neto:0,iva:0,sub:0});
+    if(!m.has(k))m.set(k,{key:k,count:0,ncCount:0,cant:0,neto:0,iva:0,sub:0});
     const e=m.get(k);
-    e.count++;e.cant+=pn(r[C.cantidad]);e.neto+=pn(r[C.neto]);e.iva+=pn(r[C.iva]);e.sub+=pn(r[C.subtotal]);
+    e.count++;
+    if(isNC(r))e.ncCount++;
+    e.cant+=signed(r,C.cantidad);
+    e.neto+=signed(r,C.neto);
+    e.iva+=signed(r,C.iva);
+    e.sub+=signed(r,C.subtotal);
   });
   return[...m.values()];
 }
@@ -222,7 +237,7 @@ function applyFilters(){
 }
 
 function renderStats(){
-  const tot=fil.reduce((a,r)=>({cant:a.cant+pn(r[C.cantidad]),neto:a.neto+pn(r[C.neto]),iva:a.iva+pn(r[C.iva]),sub:a.sub+pn(r[C.subtotal])}),{cant:0,neto:0,iva:0,sub:0});
+  const tot=fil.reduce((a,r)=>({cant:a.cant+signed(r,C.cantidad),neto:a.neto+signed(r,C.neto),iva:a.iva+signed(r,C.iva),sub:a.sub+signed(r,C.subtotal)}),{cant:0,neto:0,iva:0,sub:0});
   const prods=new Set(fil.map(r=>r[C.producto])).size;
   const clts=new Set(fil.map(r=>r[C.cliente])).size;
   document.getElementById('stats').innerHTML=`
