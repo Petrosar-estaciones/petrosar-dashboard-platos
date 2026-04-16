@@ -3,620 +3,877 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PETROSAR — Platos Principales 2026</title>
+<title>PETROSAR — Dashboard Platos Principales 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --white: #ffffff;
-  --off: #f7f6f3;
-  --off2: #f0ede8;
-  --border: #e2ddd7;
-  --border2: #ccc8c0;
-  --text: #1a1714;
-  --text2: #6b6460;
-  --text3: #9e9890;
-  --ext: #1d5fa8;
-  --ext-light: #e8f0fb;
-  --int: #b84a1e;
-  --int-light: #fbece8;
-  --accent: #1d5fa8;
-  --green: #1a6b45;
-  --green-light: #e6f4ed;
+  --bg:        #f5f4f0;
+  --surface:   #ffffff;
+  --surface2:  #faf9f7;
+  --border:    #e8e4de;
+  --border2:   #d4cfc8;
+  --text:      #16120e;
+  --text2:     #6b6560;
+  --text3:     #a8a39c;
+  --ext:       #1a4f8a;
+  --ext2:      #2563b8;
+  --ext-bg:    #eef3fb;
+  --ext-mid:   #c3d5f0;
+  --int:       #943318;
+  --int2:      #c04820;
+  --int-bg:    #fdf0ec;
+  --int-mid:   #f0c4b4;
+  --green:     #1c6644;
+  --green-bg:  #e8f4ee;
+  --amber:     #a05c10;
+  --amber-bg:  #fdf3e4;
+  --r:         4px;
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 
 body {
-  background: var(--off);
+  background: var(--bg);
   color: var(--text);
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* ── HEADER ── */
-header {
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 100;
+/* ─── LOADING ─── */
+#loader {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  transition: opacity 0.4s ease;
 }
-.header-inner {
-  max-width: 1320px; margin: 0 auto; padding: 0 32px;
-  height: 58px;
+#loader.out { opacity: 0; pointer-events: none; }
+.loader-brand {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px; letter-spacing: -0.02em;
+  color: var(--text);
+}
+.loader-track {
+  width: 140px; height: 2px;
+  background: var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.loader-bar {
+  height: 100%; background: var(--ext);
+  border-radius: 2px;
+  animation: load 1.4s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes load { from{width:0} to{width:100%} }
+.loader-status {
+  font-size: 11px; color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* ─── HEADER ─── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.hdr {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 40px;
+  height: 60px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.brand {
-  display: flex; align-items: baseline; gap: 14px;
+.logo {
+  display: flex; align-items: center; gap: 10px;
 }
-.brand-name {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--ext);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 14px; height: 14px; fill: white; }
+.logo-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px; letter-spacing: -0.01em;
   color: var(--text);
 }
-.brand-sep { color: var(--border2); font-weight: 300; }
-.brand-sub {
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--text2);
-  letter-spacing: 0.02em;
+.logo-divider { color: var(--border2); margin: 0 4px; }
+.logo-sub {
+  font-size: 12px; font-weight: 400;
+  color: var(--text3); letter-spacing: 0.01em;
 }
-.header-meta {
+.hdr-right {
   display: flex; align-items: center; gap: 20px;
 }
-.status-pill {
+.live-badge {
   display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--text3);
+  font-size: 11px; color: var(--text2);
   font-weight: 500; letter-spacing: 0.04em;
 }
-.status-dot {
-  width: 5px; height: 5px; border-radius: 50%;
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
   background: var(--green);
+  box-shadow: 0 0 0 0 rgba(28,102,68,0.4);
+  animation: pulse 2s infinite;
 }
-#last-updated { font-size: 11px; color: var(--text3); }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(28,102,68,0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(28,102,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(28,102,68,0); }
+}
+#ts { font-size: 11px; color: var(--text3); }
+.refresh-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 14px; border-radius: 20px;
+  cursor: pointer; transition: all 0.15s;
+}
+.refresh-btn:hover { border-color: var(--border2); color: var(--text); }
+.refresh-btn.spinning { opacity: 0.6; pointer-events: none; }
 
-/* ── PAGE LAYOUT ── */
-.page { max-width: 1320px; margin: 0 auto; padding: 40px 32px 80px; }
+/* ─── PAGE ─── */
+.page {
+  max-width: 1400px; margin: 0 auto;
+  padding: 48px 40px 100px;
+}
 
-/* ── PAGE TITLE ── */
-.page-title-row {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  margin-bottom: 32px; padding-bottom: 28px;
+/* ─── PAGE HEADER ─── */
+.page-hero {
+  display: flex; align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  padding-bottom: 32px;
   border-bottom: 1px solid var(--border);
 }
+.page-eyebrow {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ext); margin-bottom: 8px;
+}
 .page-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 36px;
-  font-weight: 400;
-  line-height: 1.1;
+  font-family: 'DM Serif Display', serif;
+  font-size: 42px; font-weight: 400;
+  line-height: 1.05; letter-spacing: -0.02em;
   color: var(--text);
-  letter-spacing: -0.01em;
 }
 .page-title em { font-style: italic; color: var(--text2); }
 
-/* ── MONTH FILTER ── */
-.filter-row {
+/* ─── ALERT ─── */
+.alert {
+  display: none;
+  background: var(--amber-bg);
+  border: 1px solid #e8c87a;
+  border-radius: var(--r);
+  padding: 10px 16px;
+  font-size: 12px; color: var(--amber);
+  margin-bottom: 24px;
+}
+
+/* ─── FILTER BAR ─── */
+.filter-bar {
   display: flex; align-items: center; gap: 6px;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
 }
 .filter-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text3);
-  margin-right: 6px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); margin-right: 4px;
 }
-.m-btn {
-  background: var(--white);
+.f-btn {
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text2);
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   font-size: 12px; font-weight: 500;
-  letter-spacing: 0.04em;
-  padding: 7px 16px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.12s;
+  letter-spacing: 0.02em;
+  padding: 7px 18px;
+  border-radius: 20px;
+  cursor: pointer; transition: all 0.15s;
 }
-.m-btn:hover { border-color: var(--border2); color: var(--text); background: var(--off); }
-.m-btn.active {
+.f-btn:hover { border-color: var(--border2); color: var(--text); }
+.f-btn.active {
   background: var(--text);
   border-color: var(--text);
-  color: var(--white);
+  color: white;
+}
+/* Abril en curso */
+.f-btn.in-progress {
+  border-style: dashed;
 }
 
-/* ── ERROR BANNER ── */
-.error-banner {
-  background: #fef9ec;
-  border: 1px solid #f0d98a;
-  border-radius: 3px;
-  padding: 10px 16px;
-  font-size: 12px; color: #7a6020;
-  margin-bottom: 28px;
-  display: none;
-}
-
-/* ── KPI STRIP ── */
-.kpi-strip {
+/* ─── KPI STRIP ─── */
+.kpis {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0;
+  gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--r);
   overflow: hidden;
   margin-bottom: 48px;
 }
 .kpi {
-  background: var(--white);
-  padding: 22px 22px 20px;
+  background: var(--surface);
+  padding: 24px 22px 20px;
   position: relative;
-  transition: background 0.15s;
+  transition: background 0.12s;
 }
-.kpi:hover { background: var(--off); }
-.kpi + .kpi { border-left: 1px solid var(--border); }
+.kpi:hover { background: var(--surface2); }
+.kpi-tag {
+  position: absolute; top: 14px; right: 14px;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px;
+}
+.kpi-tag.ext { background: var(--ext-bg); color: var(--ext); }
+.kpi-tag.int { background: var(--int-bg); color: var(--int); }
+.kpi-tag.live { background: var(--green-bg); color: var(--green); }
 .kpi-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--text3);
-  margin-bottom: 10px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 12px;
 }
-.kpi-num {
-  font-family: 'Instrument Serif', serif;
-  font-size: 32px; font-weight: 400; line-height: 1;
-  margin-bottom: 5px;
-  letter-spacing: -0.02em;
+.kpi-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 34px; font-weight: 400;
+  line-height: 1; letter-spacing: -0.02em;
+  margin-bottom: 6px;
 }
-.kpi-num.c-ext { color: var(--ext); }
-.kpi-num.c-int { color: var(--int); }
-.kpi-num.c-green { color: var(--green); }
-.kpi-sub { font-size: 11px; color: var(--text3); font-weight: 400; }
-.kpi-badge {
-  position: absolute; top: 16px; right: 16px;
-  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 3px 7px; border-radius: 2px;
+.kpi-val.c-ext { color: var(--ext); }
+.kpi-val.c-int { color: var(--int); }
+.kpi-val.c-green { color: var(--green); }
+.kpi-val.c-amber { color: var(--amber); }
+.kpi-sub {
+  font-size: 11px; color: var(--text3); font-weight: 400;
 }
-.kpi-badge.ext { background: var(--ext-light); color: var(--ext); }
-.kpi-badge.int { background: var(--int-light); color: var(--int); }
+.kpi-sub b { color: var(--text2); font-weight: 500; }
 
-/* ── SECTION HEADER ── */
-.sec-head {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 20px;
+/* ─── SECTION ─── */
+.sec {
+  margin-bottom: 12px;
 }
-.sec-eyebrow {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text3);
+.sec-head {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 24px;
+}
+.sec-eye {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text3); white-space: nowrap;
 }
 .sec-line { flex: 1; height: 1px; background: var(--border); }
-.sec-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px; font-weight: 400;
-  color: var(--text); letter-spacing: -0.01em;
-  margin-bottom: 20px;
-}
 
-/* ── CHART GRID ── */
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.grid21 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
-@media (max-width: 960px) { .grid2, .grid3, .grid21 { grid-template-columns: 1fr; } }
-
-.chart-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 22px 22px 18px;
-}
-.chart-card-title {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text3);
-  margin-bottom: 4px;
-}
-.chart-card-sub {
-  font-size: 12px; color: var(--text2);
-  margin-bottom: 16px;
-}
-.chart-legend {
-  display: flex; gap: 16px; margin-bottom: 12px;
-}
-.cl-item {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--text2);
-}
-.cl-swatch {
-  width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0;
-}
-
-/* ── DIVIDER ── */
-.sec-divider {
-  border: none; border-top: 1px solid var(--border);
-  margin: 48px 0 36px;
-}
-
-/* ── SEGMENT BANNER ── */
+/* ─── SEGMENT BANNER ─── */
 .seg-banner {
-  border-radius: 3px;
-  padding: 14px 20px;
+  border-radius: var(--r);
+  padding: 16px 20px;
   margin-bottom: 20px;
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 16px;
 }
-.seg-banner.ext { background: var(--ext-light); border: 1px solid #c4d9f0; }
-.seg-banner.int { background: var(--int-light); border: 1px solid #f0ccc0; }
-.seg-tag {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+.seg-banner.ext { background: var(--ext-bg); border: 1px solid var(--ext-mid); }
+.seg-banner.int { background: var(--int-bg); border: 1px solid var(--int-mid); }
+.seg-chip {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px;
   white-space: nowrap;
 }
-.seg-tag.ext { background: var(--ext); color: white; }
-.seg-tag.int { background: var(--int); color: white; }
-.seg-desc { font-size: 13px; color: var(--text2); }
-.seg-stat {
-  margin-left: auto;
-  font-family: 'Instrument Serif', serif;
-  font-size: 20px;
-  letter-spacing: -0.01em;
+.seg-chip.ext { background: var(--ext); color: white; }
+.seg-chip.int { background: var(--int); color: white; }
+.seg-desc { font-size: 13px; color: var(--text2); flex: 1; }
+.seg-big {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; letter-spacing: -0.01em;
+  white-space: nowrap;
 }
-.seg-stat.ext { color: var(--ext); }
-.seg-stat.int { color: var(--int); }
+.seg-big.ext { color: var(--ext); }
+.seg-big.int { color: var(--int); }
 
-/* ── TABLE ── */
-.data-table {
+/* ─── GRID ─── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 16px; }
+.g21{ display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:1060px){ .g2,.g3,.g4,.g21{ grid-template-columns:1fr; } }
+
+/* ─── CHART CARD ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px 22px 18px;
+}
+.card-title {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 4px;
+}
+.card-sub {
+  font-size: 12px; color: var(--text2);
+  margin-bottom: 18px;
+}
+.card-legend {
+  display: flex; gap: 14px; margin-bottom: 14px;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text2);
+}
+.leg-dot {
+  width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* ─── MINI STAT ─── */
+.mini-stat-row {
+  display: flex; gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  margin-bottom: 16px;
+}
+.mini-stat {
+  flex: 1; background: var(--surface);
+  padding: 16px 18px;
+  border-right: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.mini-stat:last-child { border-right: none; }
+.mini-stat:hover { background: var(--surface2); }
+.ms-label {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 6px;
+}
+.ms-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px; letter-spacing: -0.01em;
+  line-height: 1;
+}
+.ms-val.c-ext { color: var(--ext); }
+.ms-val.c-int { color: var(--int); }
+.ms-val.c-green { color: var(--green); }
+.ms-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* ─── DIVIDER ─── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 48px 0 40px; }
+
+/* ─── TABLE ─── */
+.tbl-wrap { overflow-x: auto; margin-bottom: 48px; }
+.tbl {
   width: 100%; border-collapse: collapse;
-  font-size: 12px; margin-bottom: 40px;
+  font-size: 12px;
 }
-.data-table thead th {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text3);
-  padding: 10px 14px; text-align: right;
-  border-bottom: 2px solid var(--border2);
-  background: var(--white);
+.tbl thead th {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); padding: 10px 14px;
+  text-align: right; border-bottom: 2px solid var(--border2);
+  background: var(--surface); white-space: nowrap;
 }
-.data-table thead th:first-child { text-align: left; }
-.data-table tbody td {
-  padding: 11px 14px; text-align: right;
-  border-bottom: 1px solid var(--border);
-  background: var(--white);
-  font-variant-numeric: tabular-nums;
-}
-.data-table tbody td:first-child { text-align: left; font-weight: 500; }
-.data-table tbody tr:hover td { background: var(--off); }
-.data-table tfoot td {
+.tbl thead th:first-child { text-align: left; }
+.tbl tbody td {
   padding: 12px 14px; text-align: right;
-  border-top: 2px solid var(--border2);
-  background: var(--off2);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.data-table tfoot td:first-child { text-align: left; }
-.td-ext { color: var(--ext); }
-.td-int { color: var(--int); }
-.td-total { color: var(--text); font-weight: 600; }
+.tbl tbody td:first-child { text-align: left; font-weight: 500; }
+.tbl tbody tr:hover td { background: var(--surface2); }
+.tbl tfoot td {
+  padding: 13px 14px; text-align: right;
+  border-top: 2px solid var(--border2);
+  background: var(--surface2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tbl tfoot td:first-child { text-align: left; }
+.c-ext { color: var(--ext); }
+.c-int { color: var(--int); }
+.c-green { color: var(--green); }
+.fw6 { font-weight: 600; }
 
-/* ── FOOTER ── */
+/* ─── IN-PROGRESS LABEL ─── */
+.badge-prog {
+  display: inline-block;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--amber-bg); color: var(--amber);
+  border: 1px dashed #e8c87a;
+  padding: 1px 6px; border-radius: 20px;
+  vertical-align: middle; margin-left: 4px;
+}
+
+/* ─── FOOTER ─── */
 footer {
-  background: var(--white);
+  background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 18px 0;
 }
-.footer-inner {
-  max-width: 1320px; margin: 0 auto; padding: 0 32px;
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 8px;
+.ftr {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 40px;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 8px;
 }
-.footer-note { font-size: 11px; color: var(--text3); }
+.ftr-note { font-size: 11px; color: var(--text3); }
 
-/* ── LOADING ── */
-.loading-screen {
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--off);
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 12px;
-  transition: opacity 0.3s;
-}
-.loading-screen.gone { opacity: 0; pointer-events: none; }
-.loading-name {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text2);
-}
-.loading-bar {
-  width: 120px; height: 1px;
-  background: var(--border2); border-radius: 1px; overflow: hidden;
-}
-.loading-fill {
-  height: 100%; background: var(--text);
-  animation: lf 1s ease-out forwards;
-}
-@keyframes lf { from { width: 0 } to { width: 100% } }
-
-/* ── ANIMATE IN ── */
-.fade-up {
-  opacity: 0; transform: translateY(8px);
-  animation: fu 0.4s ease forwards;
-}
-@keyframes fu { to { opacity: 1; transform: none; } }
+/* ─── ANIMATIONS ─── */
+.fade { opacity: 0; transform: translateY(10px); animation: fadeUp 0.45s ease forwards; }
 .d1 { animation-delay: 0.05s; }
 .d2 { animation-delay: 0.12s; }
-.d3 { animation-delay: 0.2s; }
+.d3 { animation-delay: 0.20s; }
 .d4 { animation-delay: 0.28s; }
+.d5 { animation-delay: 0.36s; }
+@keyframes fadeUp { to { opacity:1; transform:none; } }
 </style>
 </head>
 <body>
 
-<div class="loading-screen" id="loading">
-  <div class="loading-name">Petrosar</div>
-  <div class="loading-bar"><div class="loading-fill"></div></div>
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-brand">Petrosar</div>
+  <div class="loader-track"><div class="loader-bar"></div></div>
+  <div class="loader-status" id="loader-status">Conectando con Google Sheets…</div>
 </div>
 
+<!-- HEADER -->
 <header>
-  <div class="header-inner">
-    <div class="brand">
-      <span class="brand-name">Petrosar</span>
-      <span class="brand-sep">—</span>
-      <span class="brand-sub">Servicios de Alimentación · Platos Principales</span>
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 14 14"><path d="M2 11 L7 2 L12 11 Z"/></svg>
+      </div>
+      <span class="logo-name">Petrosar</span>
+      <span class="logo-divider">—</span>
+      <span class="logo-sub">Servicios de Alimentación · Platos Principales</span>
     </div>
-    <div class="header-meta">
-      <div class="status-pill"><div class="status-dot"></div><span id="last-updated">Cargando…</span></div>
+    <div class="hdr-right">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        <span id="ts">Cargando…</span>
+      </div>
+      <button class="refresh-btn" onclick="manualRefresh()" id="rfbtn">↻ Actualizar</button>
     </div>
   </div>
 </header>
 
+<!-- PAGE -->
 <div class="page">
 
-  <div class="page-title-row fade-up">
-    <h1 class="page-title">Resumen comparativo<br><em>Enero — Abril 2026</em></h1>
+  <!-- HERO -->
+  <div class="page-hero fade">
+    <div>
+      <div class="page-eyebrow">Resumen operativo 2026</div>
+      <h1 class="page-title">Platos Principales<br><em>Enero — Abril</em></h1>
+    </div>
   </div>
 
-  <div class="filter-row fade-up d1">
+  <!-- ALERT -->
+  <div class="alert" id="alert">
+    ⚠ No fue posible conectar con Google Sheets. Mostrando datos de referencia. Para activar la conexión en vivo, publicá el sheet como CSV desde <b>Archivo → Compartir → Publicar en la web</b>.
+  </div>
+
+  <!-- FILTER -->
+  <div class="filter-bar fade d1">
     <span class="filter-label">Período</span>
-    <button class="m-btn active" onclick="setMonth('all')">Todos</button>
-    <button class="m-btn" onclick="setMonth(0)">Enero</button>
-    <button class="m-btn" onclick="setMonth(1)">Febrero</button>
-    <button class="m-btn" onclick="setMonth(2)">Marzo</button>
-    <button class="m-btn" onclick="setMonth(3)">Abril</button>
-  </div>
-
-  <div class="error-banner" id="error-banner">
-    Los datos se están mostrando desde la última versión conocida. Para conectar con Google Sheets, publicá la hoja como CSV desde Archivo → Compartir → Publicar en la web.
+    <button class="f-btn active" onclick="setMonth('all')">Todos los meses</button>
+    <button class="f-btn" onclick="setMonth(0)">Enero</button>
+    <button class="f-btn" onclick="setMonth(1)">Febrero</button>
+    <button class="f-btn" onclick="setMonth(2)">Marzo</button>
+    <button class="f-btn in-progress" onclick="setMonth(3)">Abril ···</button>
   </div>
 
   <!-- KPIs -->
-  <div class="kpi-strip fade-up d2" id="kpi-strip">
+  <div class="kpis fade d2" id="kpi-wrap">
     <div class="kpi">
-      <div class="kpi-label">Total platos</div>
-      <div class="kpi-num" id="k-total">—</div>
+      <div class="kpi-label">Total platos servidos</div>
+      <div class="kpi-val" id="k-total">—</div>
       <div class="kpi-sub" id="k-dias">— días trabajados</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Promedio / día</div>
-      <div class="kpi-num" id="k-avg">—</div>
-      <div class="kpi-sub">platos promedio diario</div>
+      <div class="kpi-val c-amber" id="k-avg">—</div>
+      <div class="kpi-sub">platos por día hábil</div>
     </div>
     <div class="kpi">
-      <div class="kpi-badge ext">Externo</div>
+      <div class="kpi-tag ext">Externo</div>
       <div class="kpi-label">Clientes externos</div>
-      <div class="kpi-num c-ext" id="k-ext">—</div>
-      <div class="kpi-sub" id="k-ext-neto">neto $—</div>
+      <div class="kpi-val c-ext" id="k-ext">—</div>
+      <div class="kpi-sub" id="k-ext-neto">neto —</div>
     </div>
     <div class="kpi">
-      <div class="kpi-badge int">Interno</div>
-      <div class="kpi-label">Petrosar interno</div>
-      <div class="kpi-num c-int" id="k-int">—</div>
-      <div class="kpi-sub" id="k-int-neto">neto $—</div>
+      <div class="kpi-tag int">Interno</div>
+      <div class="kpi-label">Consumo interno</div>
+      <div class="kpi-val c-int" id="k-int">—</div>
+      <div class="kpi-sub" id="k-int-neto">neto —</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Total neto</div>
-      <div class="kpi-num c-green" id="k-neto">—</div>
-      <div class="kpi-sub" id="k-precio">$— por plato</div>
+      <div class="kpi-tag live">Live</div>
+      <div class="kpi-label">Total neto acumulado</div>
+      <div class="kpi-val c-green" id="k-neto">—</div>
+      <div class="kpi-sub" id="k-precio">$— precio promedio</div>
     </div>
   </div>
 
-  <!-- COMPARATIVO MENSUAL -->
-  <div class="fade-up d3">
+  <!-- ── MINI STATS (Máx / Mín / Precio prom.) ── -->
+  <div class="mini-stat-row fade d3" id="mini-stats">
+    <div class="mini-stat">
+      <div class="ms-label">Máximo diario</div>
+      <div class="ms-val c-ext" id="ms-max">—</div>
+      <div class="ms-sub">platos en un solo día</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">Mínimo diario</div>
+      <div class="ms-val c-int" id="ms-min">—</div>
+      <div class="ms-sub">platos en un solo día</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">Precio promedio / plato</div>
+      <div class="ms-val c-green" id="ms-precio">—</div>
+      <div class="ms-sub">neto promedio ponderado</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">Mejor mes (volumen)</div>
+      <div class="ms-val" id="ms-bestmes">—</div>
+      <div class="ms-sub" id="ms-bestmes-sub">— platos</div>
+    </div>
+    <div class="mini-stat">
+      <div class="ms-label">Mejor mes (neto $)</div>
+      <div class="ms-val" id="ms-bestneto">—</div>
+      <div class="ms-sub" id="ms-bestneto-sub">— facturado</div>
+    </div>
+  </div>
+
+  <!-- ── SECCIÓN COMPARATIVO MENSUAL ── -->
+  <div class="sec fade d3">
     <div class="sec-head">
-      <span class="sec-eyebrow">Comparativo mensual</span>
+      <span class="sec-eye">Comparativo mensual</span>
       <div class="sec-line"></div>
     </div>
 
-    <div class="grid2">
-      <div class="chart-card">
-        <div class="chart-card-title">Platos vendidos por mes</div>
-        <div class="chart-legend">
-          <div class="cl-item"><div class="cl-swatch" style="background:var(--ext)"></div>Clientes externos</div>
-          <div class="cl-item"><div class="cl-swatch" style="background:var(--int)"></div>Petrosar interno</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Platos vendidos por mes</div>
+        <div class="card-sub">Externos vs. consumo interno</div>
+        <div class="card-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--ext2)"></div>Clientes externos</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--int2)"></div>Petrosar interno</div>
         </div>
-        <canvas id="c-platos-mes" height="200"></canvas>
+        <canvas id="c-platos" height="200"></canvas>
       </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Total neto ($) por mes</div>
-        <div class="chart-legend">
-          <div class="cl-item"><div class="cl-swatch" style="background:var(--ext)"></div>Clientes externos</div>
-          <div class="cl-item"><div class="cl-swatch" style="background:var(--int)"></div>Petrosar interno</div>
+      <div class="card">
+        <div class="card-title">Total neto ($) por mes</div>
+        <div class="card-sub">Facturación acumulada mensual</div>
+        <div class="card-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--ext2)"></div>Clientes externos</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--int2)"></div>Petrosar interno</div>
         </div>
-        <canvas id="c-neto-mes" height="200"></canvas>
+        <canvas id="c-neto" height="200"></canvas>
       </div>
     </div>
 
-    <div class="grid3">
-      <div class="chart-card">
-        <div class="chart-card-title">Promedio platos / día</div>
+    <div class="g3">
+      <div class="card">
+        <div class="card-title">Promedio platos / día</div>
+        <div class="card-sub">Ritmo operativo diario</div>
         <canvas id="c-avg" height="170"></canvas>
       </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Días trabajados</div>
-        <canvas id="c-dias" height="170"></canvas>
+      <div class="card">
+        <div class="card-title">Máximo y mínimo diario</div>
+        <div class="card-sub">Rango de producción por mes</div>
+        <canvas id="c-maxmin" height="170"></canvas>
       </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Precio promedio / plato</div>
+      <div class="card">
+        <div class="card-title">Precio promedio / plato</div>
+        <div class="card-sub">Evolución del ticket promedio</div>
         <canvas id="c-precio" height="170"></canvas>
       </div>
     </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Días trabajados por mes</div>
+      <div class="card-sub">Días hábiles con actividad registrada</div>
+      <canvas id="c-dias" height="90"></canvas>
+    </div>
   </div>
 
-  <hr class="sec-divider">
+  <hr class="divider">
 
-  <!-- CLIENTES EXTERNOS -->
-  <div class="fade-up d4">
+  <!-- ── CLIENTES EXTERNOS ── -->
+  <div class="sec fade d4">
     <div class="sec-head">
-      <span class="sec-eyebrow">Ventas</span>
+      <span class="sec-eye">Ventas — Clientes externos</span>
       <div class="sec-line"></div>
     </div>
     <div class="seg-banner ext">
-      <span class="seg-tag ext">Clientes externos</span>
+      <span class="seg-chip ext">Externos</span>
       <span class="seg-desc">Facturación y volumen de ventas al mercado externo</span>
-      <span class="seg-stat ext" id="seg-ext-total">—</span>
+      <span class="seg-big ext" id="seg-ext">— platos</span>
     </div>
-    <div class="grid2">
-      <div class="chart-card">
-        <div class="chart-card-title">Platos vendidos — externos</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Platos vendidos — externos</div>
         <canvas id="c-ext-platos" height="190"></canvas>
       </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Promedio diario — externos</div>
-        <canvas id="c-ext-avg" height="190"></canvas>
+      <div class="card">
+        <div class="card-title">Neto facturado — externos ($)</div>
+        <canvas id="c-ext-neto" height="190"></canvas>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Promedio diario — externos</div>
+        <canvas id="c-ext-avg" height="160"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">Precio promedio / plato — externos</div>
+        <canvas id="c-ext-precio" height="160"></canvas>
       </div>
     </div>
   </div>
 
-  <hr class="sec-divider">
+  <hr class="divider">
 
-  <!-- PETROSAR INTERNO -->
-  <div class="fade-up d4">
+  <!-- ── CONSUMO INTERNO ── -->
+  <div class="sec fade d4">
     <div class="sec-head">
-      <span class="sec-eyebrow">Consumo interno</span>
+      <span class="sec-eye">Consumo interno — Petrosar</span>
       <div class="sec-line"></div>
     </div>
     <div class="seg-banner int">
-      <span class="seg-tag int">Petrosar interno</span>
-      <span class="seg-desc">Consumo propio de la empresa, separado de ventas</span>
-      <span class="seg-stat int" id="seg-int-total">—</span>
+      <span class="seg-chip int">Interno</span>
+      <span class="seg-desc">Consumo propio de la empresa, separado de ventas externas</span>
+      <span class="seg-big int" id="seg-int">— platos</span>
     </div>
-    <div class="grid2">
-      <div class="chart-card">
-        <div class="chart-card-title">Platos consumidos — interno</div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">Platos consumidos — interno</div>
         <canvas id="c-int-platos" height="190"></canvas>
       </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Neto consumo interno ($)</div>
+      <div class="card">
+        <div class="card-title">Neto consumo interno ($)</div>
         <canvas id="c-int-neto" height="190"></canvas>
       </div>
     </div>
   </div>
 
-  <hr class="sec-divider">
+  <hr class="divider">
 
-  <!-- TABLE -->
-  <div class="fade-up d4">
+  <!-- ── TABLA DETALLE ── -->
+  <div class="sec fade d5">
     <div class="sec-head">
-      <span class="sec-eyebrow">Detalle</span>
+      <span class="sec-eye">Tabla detalle completa</span>
       <div class="sec-line"></div>
     </div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Mes</th>
-          <th>Días</th>
-          <th>Total platos</th>
-          <th>Prom./día</th>
-          <th class="td-ext">Ext. platos</th>
-          <th class="td-ext">Ext. neto $</th>
-          <th class="td-int">Int. platos</th>
-          <th class="td-int">Int. neto $</th>
-          <th>Total neto $</th>
-          <th>$ / plato</th>
-        </tr>
-      </thead>
-      <tbody id="t-body"></tbody>
-      <tfoot id="t-foot"></tfoot>
-    </table>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Días</th>
+            <th>Total platos</th>
+            <th>Prom./día</th>
+            <th>Máx. diario</th>
+            <th>Mín. diario</th>
+            <th class="c-ext">Ext. platos</th>
+            <th class="c-ext">Ext. neto $</th>
+            <th class="c-ext">Ext. $/plato</th>
+            <th class="c-int">Int. platos</th>
+            <th class="c-int">Int. neto $</th>
+            <th>Total neto $</th>
+            <th>$/plato</th>
+          </tr>
+        </thead>
+        <tbody id="t-body"></tbody>
+        <tfoot id="t-foot"></tfoot>
+      </table>
+    </div>
   </div>
 
-</div>
+</div><!-- /page -->
 
 <footer>
-  <div class="footer-inner">
-    <span class="footer-note">PETROSAR · Servicios de Alimentación · 2026</span>
-    <span class="footer-note">Datos: Google Sheets → GitHub Pages</span>
+  <div class="ftr">
+    <span class="ftr-note">PETROSAR · Servicios de Alimentación · 2026</span>
+    <span class="ftr-note" id="ftr-src">Datos en tiempo real · Google Sheets</span>
   </div>
 </footer>
 
 <script>
-// ─── CONFIG ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
 const SHEET_ID = '1kPSgv2JO9N5QazSYPjcx7ITn_5W1tx2GmA6v2C8q98g';
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const AUTO_REFRESH_MIN = 5; // refrescar cada 5 minutos
 
+// ════════════════════════════════════════════════════════
+// FALLBACK — datos reales al 16/04/2026
+// ════════════════════════════════════════════════════════
 const FALLBACK = [
-  { mes:'Enero',   diasTotal:21, platosTotal:1229, avgDia:58.5, neto:16265901.99, precioAvg:13235.07,
-    ext:{ platos:1229, avg:58.5, neto:16265901.99 }, int:{ platos:0, avg:0, neto:0 } },
-  { mes:'Febrero', diasTotal:16, platosTotal:844,  avgDia:52.8, neto:11808132.40, precioAvg:13990.68,
-    ext:{ platos:818, avg:51.1, neto:11421768.78 }, int:{ platos:26, avg:2, neto:386363.62 } },
-  { mes:'Marzo',   diasTotal:20, platosTotal:1360, avgDia:68.0, neto:19073845.55, precioAvg:14024.89,
-    ext:{ platos:1329, avg:66.5, neto:18622192.68 }, int:{ platos:31, avg:2.4, neto:451652.87 } },
-  { mes:'Abril',   diasTotal:7,  platosTotal:460,  avgDia:65.7, neto:6526886.59,  precioAvg:14188.88,
-    ext:{ platos:56, avg:61, neto:768628.12 }, int:{ platos:2, avg:2, neto:17685.95 } },
+  {
+    mes:'Enero', diasTotal:21, platosTotal:1229, avgDia:58.5,
+    maxDia:92, minDia:40, neto:16265901.99, precioAvg:13235.07,
+    ext:{ platos:1229, avg:58.5, neto:16265901.99, precio:13235.07 },
+    int:{ platos:0,    avg:0,    neto:0,           precio:0         },
+    enCurso: false,
+  },
+  {
+    mes:'Febrero', diasTotal:16, platosTotal:844, avgDia:52.8,
+    maxDia:76, minDia:40, neto:11808132.40, precioAvg:13990.68,
+    ext:{ platos:818, avg:51.1, neto:11421768.78, precio:13963.04 },
+    int:{ platos:26,  avg:2,    neto:386363.62,   precio:14860.14 },
+    enCurso: false,
+  },
+  {
+    mes:'Marzo', diasTotal:20, platosTotal:1360, avgDia:68.0,
+    maxDia:93, minDia:52, neto:19073845.55, precioAvg:14024.89,
+    ext:{ platos:1329, avg:66.5, neto:18622192.68, precio:14012.18 },
+    int:{ platos:31,   avg:2.4,  neto:451652.87,   precio:14569.45 },
+    enCurso: false,
+  },
+  {
+    mes:'Abril', diasTotal:7, platosTotal:460, avgDia:65.7,
+    maxDia:79, minDia:49, neto:6526886.59, precioAvg:14188.88,
+    ext:{ platos:56, avg:61,  neto:768628.12,  precio:13725.50 },
+    int:{ platos:2,  avg:2,   neto:17685.95,   precio:8842.98  },
+    enCurso: true,
+  },
 ];
 
-// ─── STATE ────────────────────────────────────────────────────────────────
-let DATA = [];
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let DATA   = [];
 let active = 'all';
 let charts = {};
 
-// ─── LOAD ─────────────────────────────────────────────────────────────────
-async function loadData() {
+// ════════════════════════════════════════════════════════
+// FETCH & PARSE
+// ════════════════════════════════════════════════════════
+async function loadData(showLoader = true) {
   try {
-    const r = await fetch(CSV_URL, { signal: AbortSignal.timeout(6000) });
-    if (!r.ok) throw new Error();
-    const text = await r.text();
-    const rows = text.trim().split('\n').map(l => l.split(',').map(c => c.replace(/"/g,'').trim()));
+    const r = await fetch(CSV_URL + '&t=' + Date.now(), { signal: AbortSignal.timeout(7000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    const rows = txt.trim().split('\n').map(l =>
+      l.split(',').map(c => c.replace(/"/g,'').trim())
+    );
+
     const find = kw => rows.find(r => r[0]?.toLowerCase().includes(kw.toLowerCase()));
-    const vals = row => row ? row.slice(1,5).map(v => parseFloat(v.replace(/\./g,'').replace(',','.')) || 0) : [0,0,0,0];
-    const dias = vals(find('Días trabajados'));
-    const pl   = vals(find('Total platos vendidos'));
-    if (!dias || pl[0] === 0) throw new Error();
-    const avg  = vals(find('Promedio platos / día'));
-    const neto = vals(find('Total neto'));
-    const prec = vals(find('Precio promedio'));
+    const vals = (row, n=4) => row
+      ? row.slice(1, n+1).map(v => parseFloat(v.replace(/\./g,'').replace(',','.')) || 0)
+      : Array(n).fill(0);
+
+    const dias    = vals(find('Días trabajados'));
+    const platos  = vals(find('Total platos vendidos'));
+    if (platos[0] === 0) throw new Error('Sin datos');
+
+    const avg     = vals(find('Promedio platos'));
+    const maxD    = vals(find('Máximo diario'));
+    const minD    = vals(find('Mínimo diario'));
+    const neto    = vals(find('Total neto'));
+    const precio  = vals(find('Precio promedio por plato'));
+    // Externos
+    const eDias   = vals(find('CLIENTES EXTERNOS') ? find('Días trabajados'.slice(5)) : null);
+    const ePlatos = vals(find('Total platos vendidos'.slice(6)));
+    const eAvg    = vals(find('Promedio platos / día'.slice(6)));
+    const eNeto   = vals(find('Total neto ($)'.slice(6)));
+    const ePrecio = vals(find('Precio promedio por plato ($)'.slice(6)));
+    // Internos
+    const iPlatos = vals(find('Total platos vendidos'.slice(9)));
+    const iAvg    = vals(find('Promedio platos / día'.slice(9)));
+    const iNeto   = vals(find('Total neto ($)'.slice(9)));
+
     DATA = FALLBACK.map((fb, i) => ({
       ...fb,
-      diasTotal: dias[i] || fb.diasTotal,
-      platosTotal: pl[i] || fb.platosTotal,
-      avgDia: avg[i] || fb.avgDia,
-      neto: neto[i] || fb.neto,
-      precioAvg: prec[i] || fb.precioAvg,
+      diasTotal:   dias[i]   || fb.diasTotal,
+      platosTotal: platos[i] || fb.platosTotal,
+      avgDia:      avg[i]    || fb.avgDia,
+      maxDia:      maxD[i]   || fb.maxDia,
+      minDia:      minD[i]   || fb.minDia,
+      neto:        neto[i]   || fb.neto,
+      precioAvg:   precio[i] || fb.precioAvg,
+      ext: {
+        platos: ePlatos[i] || fb.ext.platos,
+        avg:    eAvg[i]    || fb.ext.avg,
+        neto:   eNeto[i]   || fb.ext.neto,
+        precio: ePrecio[i] || fb.ext.precio,
+      },
+      int: {
+        platos: iPlatos[i] || fb.int.platos,
+        avg:    iAvg[i]    || fb.int.avg,
+        neto:   iNeto[i]   || fb.int.neto,
+        precio: fb.int.precio,
+      },
     }));
-    document.getElementById('last-updated').textContent =
+
+    document.getElementById('ts').textContent =
       'Actualizado ' + new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  } catch {
+    document.getElementById('ftr-src').textContent = 'Datos en tiempo real · Google Sheets';
+    document.getElementById('alert').style.display = 'none';
+
+  } catch(err) {
     DATA = FALLBACK;
-    document.getElementById('error-banner').style.display = 'block';
-    document.getElementById('last-updated').textContent = 'Datos de referencia';
+    document.getElementById('ts').textContent = 'Datos de referencia';
+    document.getElementById('alert').style.display = 'block';
+    document.getElementById('ftr-src').textContent = 'Modo offline · Datos de referencia';
   }
+
   render();
-  document.getElementById('loading').classList.add('gone');
+  if (showLoader) {
+    document.getElementById('loader-status').textContent = 'Listo';
+    setTimeout(() => document.getElementById('loader').classList.add('out'), 300);
+  }
 }
 
-// ─── FILTER ───────────────────────────────────────────────────────────────
-function filtered() { return active === 'all' ? DATA : [DATA[active]].filter(Boolean); }
+function manualRefresh() {
+  const btn = document.getElementById('rfbtn');
+  btn.classList.add('spinning');
+  btn.textContent = '↻ Actualizando…';
+  loadData(false).finally(() => {
+    btn.classList.remove('spinning');
+    btn.textContent = '↻ Actualizar';
+  });
+}
+
+// Auto-refresh cada N minutos
+setInterval(() => loadData(false), AUTO_REFRESH_MIN * 60 * 1000);
+
+// ════════════════════════════════════════════════════════
+// FILTER
+// ════════════════════════════════════════════════════════
+function filtered() {
+  return active === 'all' ? DATA : [DATA[active]].filter(Boolean);
+}
 function setMonth(m) {
   active = m;
-  document.querySelectorAll('.m-btn').forEach((b,i) => {
+  document.querySelectorAll('.f-btn').forEach((b, i) => {
     b.classList.toggle('active', m === 'all' ? i === 0 : i === m + 1);
   });
   render();
 }
 
-// ─── FORMATTERS ───────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// FORMATTERS
+// ════════════════════════════════════════════════════════
 const n0 = v => Math.round(v).toLocaleString('es-AR');
-const n1 = v => v.toFixed(1).replace('.',',');
+const n1 = v => (+v).toFixed(1).replace('.',',');
 const money = v => {
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(2).replace('.',',') + 'B';
   if (v >= 1e6) return '$' + (v/1e6).toFixed(2).replace('.',',') + 'M';
-  if (v >= 1e3) return '$' + (v/1e3).toFixed(0).replace('.',',') + 'K';
+  if (v >= 1e3) return '$' + (v/1e3).toFixed(0) + 'K';
   return '$' + n0(v);
 };
 const moneyFull = v => '$\u202f' + n0(v);
 
-// ─── KPIs ─────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// KPIs
+// ════════════════════════════════════════════════════════
 function renderKPIs() {
   const d = filtered();
   const tp = d.reduce((s,r) => s + r.platosTotal, 0);
@@ -626,8 +883,8 @@ function renderKPIs() {
   const en = d.reduce((s,r) => s + r.ext.neto, 0);
   const ip = d.reduce((s,r) => s + r.int.platos, 0);
   const in_ = d.reduce((s,r) => s + r.int.neto, 0);
-  const avg = td > 0 ? tp/td : 0;
-  const prc = tp > 0 ? tn/tp : 0;
+  const avg = td > 0 ? tp / td : 0;
+  const prc = tp > 0 ? tn / tp : 0;
 
   document.getElementById('k-total').textContent = n0(tp);
   document.getElementById('k-dias').textContent  = n0(td) + ' días trabajados';
@@ -637,141 +894,270 @@ function renderKPIs() {
   document.getElementById('k-int').textContent   = n0(ip);
   document.getElementById('k-int-neto').textContent = 'neto ' + money(in_);
   document.getElementById('k-neto').textContent  = money(tn);
-  document.getElementById('k-precio').textContent = '$' + n0(prc) + ' por plato';
-  document.getElementById('seg-ext-total').textContent = n0(ep) + ' platos';
-  document.getElementById('seg-int-total').textContent = n0(ip) + ' platos';
+  document.getElementById('k-precio').textContent = moneyFull(prc) + ' precio promedio';
+
+  // Mini stats
+  const maxDia  = Math.max(...d.map(r => r.maxDia));
+  const minDia  = Math.min(...d.map(r => r.minDia || 9999).filter(v => v < 9999));
+  document.getElementById('ms-max').textContent = n0(maxDia);
+  document.getElementById('ms-min').textContent = n0(minDia);
+  document.getElementById('ms-precio').textContent = moneyFull(prc);
+
+  const bestPlatosIdx = d.reduce((bi,r,i) => r.platosTotal > d[bi].platosTotal ? i : bi, 0);
+  const bestNetoIdx   = d.reduce((bi,r,i) => r.neto > d[bi].neto ? i : bi, 0);
+  document.getElementById('ms-bestmes').textContent     = d[bestPlatosIdx]?.mes || '—';
+  document.getElementById('ms-bestmes-sub').textContent = n0(d[bestPlatosIdx]?.platosTotal || 0) + ' platos';
+  document.getElementById('ms-bestneto').textContent    = d[bestNetoIdx]?.mes || '—';
+  document.getElementById('ms-bestneto-sub').textContent= money(d[bestNetoIdx]?.neto || 0) + ' facturado';
+
+  // Seg banners
+  document.getElementById('seg-ext').textContent = n0(ep) + ' platos';
+  document.getElementById('seg-int').textContent = n0(ip) + ' platos';
 }
 
-// ─── CHART FACTORY ────────────────────────────────────────────────────────
-Chart.defaults.font.family = "'Bricolage Grotesque', sans-serif";
+// ════════════════════════════════════════════════════════
+// CHART DEFAULTS
+// ════════════════════════════════════════════════════════
+Chart.defaults.font.family = "'DM Sans', sans-serif";
 Chart.defaults.font.size = 11;
-Chart.defaults.color = '#9e9890';
-Chart.defaults.borderColor = '#e2ddd7';
+Chart.defaults.color = '#a8a39c';
+Chart.defaults.borderColor = '#e8e4de';
 
-const EXT_COLOR  = '#1d5fa8';
-const INT_COLOR  = '#b84a1e';
-const GRAY_COLOR = '#9e9890';
-const LINE_EXT   = '#1d5fa8';
-const LINE_INT   = '#b84a1e';
+const EXT  = '#2563b8';
+const EXT2 = 'rgba(37,99,184,0.18)';
+const INT  = '#c04820';
+const INT2 = 'rgba(192,72,32,0.18)';
+const GRN  = '#1c6644';
+const GRY  = '#c8c3bc';
+const AMB  = '#d4820e';
 
-const baseScales = (yFmt) => ({
-  x: { grid: { color: '#f0ede8', drawBorder: false }, ticks: { color: '#9e9890' }, border: { display: false } },
-  y: { grid: { color: '#f0ede8', drawBorder: false }, ticks: { color: '#9e9890', callback: yFmt || (v => v) }, border: { display: false } },
+function scales(yFmt) {
+  return {
+    x: { grid:{ color:'#f0ede8', drawBorder:false }, ticks:{ color:'#a8a39c' }, border:{ display:false } },
+    y: { grid:{ color:'#f0ede8', drawBorder:false }, ticks:{ color:'#a8a39c', callback: yFmt || (v=>v) }, border:{ display:false } },
+  };
+}
+const tt = (extra={}) => ({
+  backgroundColor:'#ffffff', borderColor:'#e8e4de', borderWidth:1,
+  titleColor:'#16120e', bodyColor:'#6b6560',
+  padding:12, cornerRadius:4,
+  titleFont:{ weight:'600', size:12 },
+  ...extra,
 });
-const baseTT = () => ({
-  backgroundColor: '#ffffff',
-  borderColor: '#e2ddd7',
-  borderWidth: 1,
-  titleColor: '#1a1714',
-  bodyColor: '#6b6460',
-  padding: 10,
-  cornerRadius: 2,
-  titleFont: { weight: '600', size: 12 },
-});
 
-function mkChart(id, type, datasets, labels, yFmt, opts = {}) {
-  if (charts[id]) { charts[id].destroy(); }
+function mk(id, type, datasets, labels, yFmt, extra={}) {
+  if (charts[id]) charts[id].destroy();
   const ctx = document.getElementById(id)?.getContext('2d');
   if (!ctx) return;
   charts[id] = new Chart(ctx, {
     type,
     data: { labels, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: { legend: { display: false }, tooltip: { ...baseTT(), ...opts.tt } },
-      scales: baseScales(yFmt),
-      ...opts.extra,
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend:{ display:false }, tooltip: tt() },
+      scales: scales(yFmt),
+      ...extra,
     }
   });
 }
 
-// ─── CHARTS ───────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════════
 function renderCharts() {
-  const d = filtered();
-  const lb = d.map(r => r.mes);
+  const d  = filtered();
+  const lb = d.map(r => r.enCurso ? r.mes + ' ···' : r.mes);
 
-  // Platos stacked
-  if (charts['c-platos-mes']) charts['c-platos-mes'].destroy();
-  const c1 = document.getElementById('c-platos-mes')?.getContext('2d');
-  if (c1) charts['c-platos-mes'] = new Chart(c1, {
-    type: 'bar',
-    data: { labels: lb, datasets: [
-      { label: 'Externos', data: d.map(r => r.ext.platos), backgroundColor: EXT_COLOR, borderRadius: 2, stack: 'a' },
-      { label: 'Interno',  data: d.map(r => r.int.platos), backgroundColor: INT_COLOR, borderRadius: 2, stack: 'a' },
-    ]},
-    options: { responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, tooltip: baseTT() },
-      scales: { x: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } }, y: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } } }
-    }
-  });
+  // Helper for stacked bar
+  function stacked(id, ds, yFmt) {
+    if (charts[id]) charts[id].destroy();
+    const ctx = document.getElementById(id)?.getContext('2d');
+    if (!ctx) return;
+    charts[id] = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:lb, datasets:ds },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{ display:false }, tooltip:tt() },
+        scales:{
+          x:{ stacked:true, grid:{ color:'#f0ede8' }, ticks:{ color:'#a8a39c' }, border:{ display:false } },
+          y:{ stacked:true, grid:{ color:'#f0ede8' }, ticks:{ color:'#a8a39c', callback: yFmt||(v=>v) }, border:{ display:false } },
+        }
+      }
+    });
+  }
 
-  // Neto stacked
-  if (charts['c-neto-mes']) charts['c-neto-mes'].destroy();
-  const c2 = document.getElementById('c-neto-mes')?.getContext('2d');
-  if (c2) charts['c-neto-mes'] = new Chart(c2, {
-    type: 'bar',
-    data: { labels: lb, datasets: [
-      { label: 'Externos', data: d.map(r => r.ext.neto), backgroundColor: EXT_COLOR, borderRadius: 2, stack: 'b' },
-      { label: 'Interno',  data: d.map(r => r.int.neto), backgroundColor: INT_COLOR, borderRadius: 2, stack: 'b' },
-    ]},
-    options: { responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, tooltip: baseTT() },
-      scales: { x: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } }, y: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890', callback: v => money(v) }, border: { display: false } } }
-    }
-  });
+  // Platos apilado
+  stacked('c-platos', [
+    { label:'Externos', data:d.map(r=>r.ext.platos), backgroundColor:EXT, borderRadius:3, stack:'a' },
+    { label:'Interno',  data:d.map(r=>r.int.platos), backgroundColor:INT, borderRadius:3, stack:'a' },
+  ]);
 
-  mkChart('c-avg',    'line', [{ label:'Prom/día', data: d.map(r=>r.avgDia), borderColor: EXT_COLOR, backgroundColor:'rgba(29,95,168,0.06)', fill:true, tension:0.4, pointBackgroundColor:EXT_COLOR, pointRadius:4, pointHoverRadius:5 }], lb);
-  mkChart('c-dias',   'bar',  [{ label:'Días',     data: d.map(r=>r.diasTotal), backgroundColor:'#c8d9ee', borderRadius:3 }], lb);
-  mkChart('c-precio', 'line', [{ label:'$/plato',  data: d.map(r=>r.precioAvg), borderColor:'#7c6b58', backgroundColor:'rgba(124,107,88,0.05)', fill:true, tension:0.4, pointBackgroundColor:'#7c6b58', pointRadius:4 }], lb, v => '$'+n0(v));
+  // Neto apilado
+  stacked('c-neto', [
+    { label:'Externos', data:d.map(r=>r.ext.neto), backgroundColor:EXT, borderRadius:3, stack:'b' },
+    { label:'Interno',  data:d.map(r=>r.int.neto), backgroundColor:INT, borderRadius:3, stack:'b' },
+  ], v => money(v));
 
-  mkChart('c-ext-platos', 'bar',  [{ label:'Platos', data:d.map(r=>r.ext.platos), backgroundColor:EXT_COLOR, borderRadius:3 }], lb);
-  mkChart('c-ext-avg',    'line', [{ label:'Prom/día', data:d.map(r=>r.ext.avg), borderColor:EXT_COLOR, backgroundColor:'rgba(29,95,168,0.07)', fill:true, tension:0.4, pointBackgroundColor:EXT_COLOR, pointRadius:4 }], lb);
-  mkChart('c-int-platos', 'bar',  [{ label:'Platos', data:d.map(r=>r.int.platos), backgroundColor:INT_COLOR, borderRadius:3 }], lb);
-  mkChart('c-int-neto',   'bar',  [{ label:'Neto $', data:d.map(r=>r.int.neto),  backgroundColor:'rgba(184,74,30,0.5)', borderRadius:3 }], lb, v => money(v));
+  // Promedio / día — línea
+  mk('c-avg', 'line', [{
+    label:'Prom/día',
+    data: d.map(r=>r.avgDia),
+    borderColor: AMB,
+    backgroundColor:'rgba(212,130,14,0.08)',
+    fill:true, tension:0.4,
+    pointBackgroundColor:AMB, pointRadius:5, pointHoverRadius:7,
+    borderWidth:2,
+  }], lb);
+
+  // Máx/Mín — barras flotantes
+  if (charts['c-maxmin']) charts['c-maxmin'].destroy();
+  const ctxMM = document.getElementById('c-maxmin')?.getContext('2d');
+  if (ctxMM) {
+    charts['c-maxmin'] = new Chart(ctxMM, {
+      type:'bar',
+      data:{
+        labels: lb,
+        datasets:[
+          { label:'Máximo', data:d.map(r=>r.maxDia), backgroundColor:EXT, borderRadius:3 },
+          { label:'Mínimo', data:d.map(r=>r.minDia), backgroundColor:INT2, borderRadius:3 },
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true,
+        plugins:{ legend:{ display:true, labels:{ color:'#a8a39c', font:{ size:10 }, boxWidth:10 } }, tooltip:tt() },
+        scales: scales(),
+      }
+    });
+  }
+
+  // Precio promedio
+  mk('c-precio', 'line', [{
+    label:'$/plato',
+    data: d.map(r=>r.precioAvg),
+    borderColor: GRN,
+    backgroundColor:'rgba(28,102,68,0.07)',
+    fill:true, tension:0.4,
+    pointBackgroundColor:GRN, pointRadius:5, pointHoverRadius:7,
+    borderWidth:2,
+  }], lb, v => money(v));
+
+  // Días trabajados
+  mk('c-dias', 'bar', [{
+    label:'Días',
+    data: d.map(r=>r.diasTotal),
+    backgroundColor: d.map(r => r.enCurso ? 'rgba(37,99,184,0.3)' : EXT),
+    borderRadius:4,
+  }], lb);
+
+  // Externos
+  mk('c-ext-platos', 'bar', [{
+    label:'Platos',
+    data: d.map(r=>r.ext.platos),
+    backgroundColor: EXT, borderRadius:4,
+  }], lb);
+
+  mk('c-ext-neto', 'bar', [{
+    label:'Neto $',
+    data: d.map(r=>r.ext.neto),
+    backgroundColor: EXT, borderRadius:4,
+  }], lb, v => money(v));
+
+  mk('c-ext-avg', 'line', [{
+    label:'Prom/día ext.',
+    data: d.map(r=>r.ext.avg),
+    borderColor: EXT, backgroundColor: EXT2,
+    fill:true, tension:0.4,
+    pointBackgroundColor:EXT, pointRadius:5, borderWidth:2,
+  }], lb);
+
+  mk('c-ext-precio', 'bar', [{
+    label:'$/plato ext.',
+    data: d.map(r=>r.ext.precio),
+    backgroundColor: EXT2,
+    borderColor: EXT,
+    borderWidth: 2,
+    borderRadius:4,
+  }], lb, v => money(v));
+
+  // Internos
+  mk('c-int-platos', 'bar', [{
+    label:'Platos internos',
+    data: d.map(r=>r.int.platos),
+    backgroundColor: INT, borderRadius:4,
+  }], lb);
+
+  mk('c-int-neto', 'bar', [{
+    label:'Neto interno $',
+    data: d.map(r=>r.int.neto),
+    backgroundColor: INT2,
+    borderColor: INT,
+    borderWidth: 2,
+    borderRadius:4,
+  }], lb, v => money(v));
 }
 
-// ─── TABLE ────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// TABLE
+// ════════════════════════════════════════════════════════
 function renderTable() {
   const d = filtered();
   document.getElementById('t-body').innerHTML = d.map(r => `
     <tr>
-      <td>${r.mes} 2026</td>
+      <td>${r.mes} 2026${r.enCurso ? '<span class="badge-prog">en curso</span>' : ''}</td>
       <td>${n0(r.diasTotal)}</td>
-      <td class="td-total">${n0(r.platosTotal)}</td>
+      <td class="fw6">${n0(r.platosTotal)}</td>
       <td>${n1(r.avgDia)}</td>
-      <td class="td-ext">${n0(r.ext.platos)}</td>
-      <td class="td-ext">${money(r.ext.neto)}</td>
-      <td class="td-int">${n0(r.int.platos)}</td>
-      <td class="td-int">${money(r.int.neto)}</td>
-      <td class="td-total">${money(r.neto)}</td>
+      <td>${n0(r.maxDia)}</td>
+      <td>${n0(r.minDia)}</td>
+      <td class="c-ext">${n0(r.ext.platos)}</td>
+      <td class="c-ext">${money(r.ext.neto)}</td>
+      <td class="c-ext">$${n0(r.ext.precio)}</td>
+      <td class="c-int">${n0(r.int.platos)}</td>
+      <td class="c-int">${money(r.int.neto)}</td>
+      <td class="fw6 c-green">${money(r.neto)}</td>
       <td>$${n0(r.precioAvg)}</td>
     </tr>`).join('');
 
-  const t = d.reduce((a,r) => ({
-    dias: a.dias+r.diasTotal, pl: a.pl+r.platosTotal, neto: a.neto+r.neto,
-    ep: a.ep+r.ext.platos, en: a.en+r.ext.neto,
-    ip: a.ip+r.int.platos, in_: a.in_+r.int.neto,
+  const t = d.reduce((a, r) => ({
+    dias: a.dias + r.diasTotal,
+    pl:   a.pl   + r.platosTotal,
+    neto: a.neto + r.neto,
+    ep:   a.ep   + r.ext.platos,
+    en:   a.en   + r.ext.neto,
+    ip:   a.ip   + r.int.platos,
+    in_:  a.in_  + r.int.neto,
   }), { dias:0, pl:0, neto:0, ep:0, en:0, ip:0, in_:0 });
 
   document.getElementById('t-foot').innerHTML = `
     <tr>
-      <td>Total</td>
+      <td>Total acumulado</td>
       <td>${n0(t.dias)}</td>
       <td>${n0(t.pl)}</td>
+      <td>—</td><td>—</td><td>—</td>
+      <td class="c-ext">${n0(t.ep)}</td>
+      <td class="c-ext">${money(t.en)}</td>
       <td>—</td>
-      <td class="td-ext">${n0(t.ep)}</td>
-      <td class="td-ext">${money(t.en)}</td>
-      <td class="td-int">${n0(t.ip)}</td>
-      <td class="td-int">${money(t.in_)}</td>
-      <td>${money(t.neto)}</td>
+      <td class="c-int">${n0(t.ip)}</td>
+      <td class="c-int">${money(t.in_)}</td>
+      <td class="fw6 c-green">${money(t.neto)}</td>
       <td>—</td>
     </tr>`;
 }
 
-function render() { renderKPIs(); renderCharts(); renderTable(); }
+// ════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════
+function render() {
+  renderKPIs();
+  renderCharts();
+  renderTable();
+}
 
-loadData();
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+loadData(true);
 </script>
 </body>
 </html>
