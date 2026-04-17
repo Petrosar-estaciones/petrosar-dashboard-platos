@@ -63,7 +63,13 @@ td.neg{color:#c0392b}
 /* TOTALES row */
 tr.tot-row td{font-weight:600;background:#f7f5f1 !important;border-top:1px solid var(--border);color:var(--text) !important}
 tr.tot-row td:first-child{background:#f7f5f1 !important}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;margin-bottom:1.5rem}
+@media(max-width:700px){.charts-row{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem}
+.chart-card h4{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1rem}
+.chart-card .chart-wrap{position:relative;height:200px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -95,7 +101,7 @@ const CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTgHTh_rNcYXIcG4q
 // Ajustá estos índices según las columnas reales del sheet
 const C={periodo:0,comprobante:1,fecha:2,cliente:3,rubroMayor:4,rubro:5,codigo:6,producto:7,cantidad:8,neto:9,iva:10,subtotal:11};
 
-let raw=[], visMonths=null, allMonths=[];
+let raw=[], visMonths=null, allMonths=[], chartCant=null, chartNeto=null;
 
 // ── PARSERS ────────────────────────────────────────────────────────────────
 function parseCSV(t){
@@ -315,8 +321,33 @@ function render(){
   html+=renderTable('GENERAL','sec-general',vis,metGen);
   html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
   html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
+  html+=`<div class="charts-row">
+    <div class="chart-card"><h4>Evolución mensual — Platos vendidos (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-cant"></canvas></div></div>
+    <div class="chart-card"><h4>Evolución mensual — Total neto $ (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-neto"></canvas></div></div>
+  </div>`;
 
   document.getElementById('app').innerHTML=html;
+
+  const labelsGraf=allMonths.map(m=>m.label.split(' ')[0]);
+  function metExtMes(key){
+    return allMonths.map(m=>{
+      const mRows=externas.filter(r=>{const d=parseDate(r[C.fecha],r[C.periodo]);return d&&monthKey(d)===m.key;});
+      if(!mRows.length)return 0;
+      const met=calcMetrics(mRows);
+      return met?met[key]:0;
+    });
+  }
+  const fontMono="'IBM Plex Mono'";
+  if(chartCant)chartCant.destroy();
+  chartCant=new Chart(document.getElementById('chart-cant').getContext('2d'),{
+    type:'bar',data:{labels:labelsGraf,datasets:[{label:'Platos',data:metExtMes('totalPlatos'),backgroundColor:'#aed6f1',borderColor:'#1a5276',borderWidth:1.5,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10,family:fontMono}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:fontMono},callback:v=>v>=1000?Math.round(v/1000)+'k':v}}}}
+  });
+  if(chartNeto)chartNeto.destroy();
+  chartNeto=new Chart(document.getElementById('chart-neto').getContext('2d'),{
+    type:'bar',data:{labels:labelsGraf,datasets:[{label:'Neto',data:metExtMes('totalNeto'),backgroundColor:'#d5f5e3',borderColor:'#0e6655',borderWidth:1.5,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10,family:fontMono}}},y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:fontMono},callback:v=>v>=1000000?'$'+Math.round(v/1000000)+'M':v>=1000?'$'+Math.round(v/1000)+'k':'$'+v}}}}
+  });
 }
 
 // ── MONTH STRIP ────────────────────────────────────────────────────────────
