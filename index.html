@@ -156,10 +156,8 @@ function monthKey(d){return d.getFullYear()*100+(d.getMonth()+1);}// 202601, 202
 // ── AGRUPAR ────────────────────────────────────────────────────────────────
 // Detecta la sección de cada fila según rubroMayor
 function getSeccion(r){
-  const rm=(r[C.rubroMayor]||'').toString().toLowerCase();
-  if(rm.includes('interno')||rm.includes('petrosar'))return'interna';
-  if(rm.includes('externo'))return'externa';
-  return'externa'; // default
+  const cliente=(r[C.cliente]||"").toString().toUpperCase();
+  return cliente.includes("PETROSAR")?"interna":"externa";
 }
 
 // Calcula métricas para un conjunto de filas filtradas por mes/sección
