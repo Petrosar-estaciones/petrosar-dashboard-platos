@@ -346,7 +346,7 @@ async function init(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const txt=await res.text();
     const rows=parseCSV(txt);
-    raw=rows.slice(1).filter(r=>r.some(c=>c.trim()));
+    raw=rows.slice(1).filter(r=>r.some(c=>c.trim())&&(r[C.rubro]||'').toString().toUpperCase().includes('PLATOS PRINCIPALES'));
 
     // Extraer meses únicos ordenados
     const monthMap=new Map();
