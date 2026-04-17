@@ -114,25 +114,36 @@ function isNC(r){
 function signed(r,col){const v=Math.abs(pn(r[col]));return isNC(r)?-v:v;}
 
 // Extrae fecha como objeto Date desde string dd/mm/yyyy o similar
-function parseDate(str){
+function parseDate(str, periodoStr){
   if(!str)return null;
-  // Quitar hora si existe: "11/3/2026 13:15" → "11/3/2026"
   const s=str.trim().split(' ')[0].split('T')[0];
-  let d;
-  // DD/MM/YYYY o D/M/YYYY (formato argentino)
-  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
-    const parts=s.split('/');
-    const dd=parseInt(parts[0]),mm=parseInt(parts[1]),yy=parseInt(parts[2]);
-    d=new Date(yy,mm-1,dd);
+  if(!/\d/.test(s))return null;
+
+  const parts=s.split('/');
+  if(parts.length===3){
+    const a=parseInt(parts[0]),b=parseInt(parts[1]),yy=parseInt(parts[2]);
+    // Si a > 12, definitivamente es DD/MM/YYYY (argentino)
+    if(a>12) return new Date(yy,b-1,a);
+    // Si b > 12, definitivamente es MM/DD/YYYY (americano)
+    if(b>12) return new Date(yy,a-1,b);
+    // Ambiguo: usar el período (ej "2026/04") para saber el mes real
+    if(periodoStr){
+      const pparts=periodoStr.split('/');
+      if(pparts.length===2){
+        const pMes=parseInt(pparts[1]);
+        // El mes real es pMes, buscar cuál de a/b coincide
+        if(b===pMes) return new Date(yy,b-1,a); // DD/MM
+        if(a===pMes) return new Date(yy,a-1,b); // MM/DD
+      }
+    }
+    // Si no hay período, asumir argentino DD/MM
+    return new Date(yy,b-1,a);
   }
-  else if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)){
-    const parts=s.split('-');
-    const dd=parseInt(parts[0]),mm=parseInt(parts[1]),yy=parseInt(parts[2]);
-    d=new Date(yy,mm-1,dd);
+  if(parts.length===1){
+    const d=new Date(s);
+    return isNaN(d)?null:d;
   }
-  else if(/^\d{4}-\d{2}-\d{2}$/.test(s)){d=new Date(s);}
-  else d=new Date(s);
-  return isNaN(d)?null:d;
+  return null;
 }
 
 // Devuelve "Enero 2026" etc desde una fecha
@@ -161,7 +172,7 @@ function calcMetrics(rows){
   let totalPlatos=0,totalNeto=0;
 
   rows.forEach(r=>{
-    const d=parseDate(r[C.fecha]);
+    const d=parseDate(r[C.fecha], r[C.periodo]);
     if(!d)return;
     const dk=d.toISOString().slice(0,10);
     diasSet.add(dk);
@@ -243,7 +254,7 @@ function render(){
   const vis=getVisMonths();
   // Filtrar raw por meses visibles
   const rowsVis=raw.filter(r=>{
-    const d=parseDate(r[C.fecha]);
+    const d=parseDate(r[C.fecha], r[C.periodo]);
     if(!d)return false;
     const k=monthKey(d);
     return vis.some(m=>m.key===k);
@@ -258,7 +269,7 @@ function render(){
     const byMonth={};
     vis.forEach(m=>{
       const mRows=rows.filter(r=>{
-        const d=parseDate(r[C.fecha]);
+        const d=parseDate(r[C.fecha], r[C.periodo]);
         return d&&monthKey(d)===m.key;
       });
       byMonth[m.key]=mRows.length?calcMetrics(mRows):null;
@@ -275,14 +286,14 @@ function render(){
     const e=metExt[m.key],i=metInt[m.key];
     if(!e&&!i){metGen[m.key]=null;return;}
     const dias=new Set([
-      ...externas.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha]).toISOString().slice(0,10)),
-      ...internas.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha]).toISOString().slice(0,10)),
+      ...externas.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha], r[C.periodo]).toISOString().slice(0,10)),
+      ...internas.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha], r[C.periodo]).toISOString().slice(0,10)),
     ]).size;
     // ventas por día general
-    const allRows=rowsVis.filter(r=>{const d=parseDate(r[C.fecha]);return d&&monthKey(d)===m.key;});
+    const allRows=rowsVis.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;});
     const vpd={};
     allRows.forEach(r=>{
-      const d=parseDate(r[C.fecha]);
+      const d=parseDate(r[C.fecha], r[C.periodo]);
       if(!d)return;
       const dk=d.toISOString().slice(0,10);
       vpd[dk]=(vpd[dk]||0)+signed(r,C.cantidad);
@@ -342,7 +353,7 @@ async function init(){
     // Extraer meses únicos ordenados
     const monthMap=new Map();
     raw.forEach(r=>{
-      const d=parseDate(r[C.fecha]);
+      const d=parseDate(r[C.fecha], r[C.periodo]);
       if(!d)return;
       const k=monthKey(d);
       if(!monthMap.has(k))monthMap.set(k,{key:k,label:monthLabel(d),order:k});
