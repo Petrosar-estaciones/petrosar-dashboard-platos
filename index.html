@@ -116,16 +116,20 @@ function signed(r,col){const v=Math.abs(pn(r[col]));return isNC(r)?-v:v;}
 // Extrae fecha como objeto Date desde string dd/mm/yyyy o similar
 function parseDate(str){
   if(!str)return null;
-  // Quitar la parte de hora si existe: "5/1/2026 8:30:00" → "5/1/2026"
+  // Quitar hora si existe: "11/3/2026 13:15" → "11/3/2026"
   const s=str.trim().split(' ')[0].split('T')[0];
   let d;
-  // M/D/YYYY o MM/DD/YYYY (formato americano del sheet)
+  // DD/MM/YYYY o D/M/YYYY (formato argentino)
   if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
     const parts=s.split('/');
-    const mm=parseInt(parts[0]),dd=parseInt(parts[1]),yy=parseInt(parts[2]);
+    const dd=parseInt(parts[0]),mm=parseInt(parts[1]),yy=parseInt(parts[2]);
     d=new Date(yy,mm-1,dd);
   }
-  else if(/^\d{2}-\d{2}-\d{4}$/.test(s)){const[dd,mm,yy]=s.split('-');d=new Date(yy,mm-1,dd);}
+  else if(/^\d{1,2}-\d{1,2}-\d{4}$/.test(s)){
+    const parts=s.split('-');
+    const dd=parseInt(parts[0]),mm=parseInt(parts[1]),yy=parseInt(parts[2]);
+    d=new Date(yy,mm-1,dd);
+  }
   else if(/^\d{4}-\d{2}-\d{2}$/.test(s)){d=new Date(s);}
   else d=new Date(s);
   return isNaN(d)?null:d;
