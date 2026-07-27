@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PETROSAR — Platos Principales 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white: #ffffff;
+  --off: #f7f6f3;
+  --off2: #f0ede8;
+  --border: #e2ddd7;
+  --border2: #ccc8c0;
+  --text: #1a1714;
+  --text2: #6b6460;
+  --text3: #9e9890;
+  --ext: #1d5fa8;
+  --ext-light: #e8f0fb;
+  --int: #b84a1e;
+  --int-light: #fbece8;
+  --accent: #1d5fa8;
+  --green: #1a6b45;
+  --green-light: #e6f4ed;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--off);
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-inner {
+  max-width: 1320px; margin: 0 auto; padding: 0 32px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+  display: flex; align-items: baseline; gap: 14px;
+}
+.brand-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.brand-sep { color: var(--border2); font-weight: 300; }
+.brand-sub {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text2);
+  letter-spacing: 0.02em;
+}
+.header-meta {
+  display: flex; align-items: center; gap: 20px;
+}
+.status-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text3);
+  font-weight: 500; letter-spacing: 0.04em;
+}
+.status-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green);
+}
+#last-updated { font-size: 11px; color: var(--text3); }
+
+/* ── PAGE LAYOUT ── */
+.page { max-width: 1320px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── PAGE TITLE ── */
+.page-title-row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 32px; padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.page-title em { font-style: italic; color: var(--text2); }
+
+/* ── MONTH FILTER ── */
+.filter-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 36px;
+}
+.filter-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+  margin-right: 6px;
+}
+.m-btn {
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 7px 16px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.m-btn:hover { border-color: var(--border2); color: var(--text); background: var(--off); }
+.m-btn.active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--white);
+}
+
+/* ── ERROR BANNER ── */
+.error-banner {
+  background: #fef9ec;
+  border: 1px solid #f0d98a;
+  border-radius: 3px;
+  padding: 10px 16px;
+  font-size: 12px; color: #7a6020;
+  margin-bottom: 28px;
+  display: none;
+}
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+.kpi {
+  background: var(--white);
+  padding: 22px 22px 20px;
+  position: relative;
+  transition: background 0.15s;
+}
+.kpi:hover { background: var(--off); }
+.kpi + .kpi { border-left: 1px solid var(--border); }
+.kpi-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 10px;
+}
+.kpi-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 32px; font-weight: 400; line-height: 1;
+  margin-bottom: 5px;
+  letter-spacing: -0.02em;
+}
+.kpi-num.c-ext { color: var(--ext); }
+.kpi-num.c-int { color: var(--int); }
+.kpi-num.c-green { color: var(--green); }
+.kpi-sub { font-size: 11px; color: var(--text3); font-weight: 400; }
+.kpi-badge {
+  position: absolute; top: 16px; right: 16px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 3px 7px; border-radius: 2px;
+}
+.kpi-badge.ext { background: var(--ext-light); color: var(--ext); }
+.kpi-badge.int { background: var(--int-light); color: var(--int); }
+
+/* ── SECTION HEADER ── */
+.sec-head {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.sec-eyebrow {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text3);
+}
+.sec-line { flex: 1; height: 1px; background: var(--border); }
+.sec-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px; font-weight: 400;
+  color: var(--text); letter-spacing: -0.01em;
+  margin-bottom: 20px;
+}
+
+/* ── CHART GRID ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid21 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 960px) { .grid2, .grid3, .grid21 { grid-template-columns: 1fr; } }
+
+.chart-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 22px 22px 18px;
+}
+.chart-card-title {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 4px;
+}
+.chart-card-sub {
+  font-size: 12px; color: var(--text2);
+  margin-bottom: 16px;
+}
+.chart-legend {
+  display: flex; gap: 16px; margin-bottom: 12px;
+}
+.cl-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text2);
+}
+.cl-swatch {
+  width: 8px; height: 8px; border-radius: 1px; flex-shrink: 0;
+}
+
+/* ── DIVIDER ── */
+.sec-divider {
+  border: none; border-top: 1px solid var(--border);
+  margin: 48px 0 36px;
+}
+
+/* ── SEGMENT BANNER ── */
+.seg-banner {
+  border-radius: 3px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.seg-banner.ext { background: var(--ext-light); border: 1px solid #c4d9f0; }
+.seg-banner.int { background: var(--int-light); border: 1px solid #f0ccc0; }
+.seg-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+  white-space: nowrap;
+}
+.seg-tag.ext { background: var(--ext); color: white; }
+.seg-tag.int { background: var(--int); color: white; }
+.seg-desc { font-size: 13px; color: var(--text2); }
+.seg-stat {
+  margin-left: auto;
+  font-family: 'Instrument Serif', serif;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+.seg-stat.ext { color: var(--ext); }
+.seg-stat.int { color: var(--int); }
+
+/* ── TABLE ── */
+.data-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px; margin-bottom: 40px;
+}
+.data-table thead th {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+  padding: 10px 14px; text-align: right;
+  border-bottom: 2px solid var(--border2);
+  background: var(--white);
+}
+.data-table thead th:first-child { text-align: left; }
+.data-table tbody td {
+  padding: 11px 14px; text-align: right;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.data-table tbody td:first-child { text-align: left; font-weight: 500; }
+.data-table tbody tr:hover td { background: var(--off); }
+.data-table tfoot td {
+  padding: 12px 14px; text-align: right;
+  border-top: 2px solid var(--border2);
+  background: var(--off2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.data-table tfoot td:first-child { text-align: left; }
+.td-ext { color: var(--ext); }
+.td-int { color: var(--int); }
+.td-total { color: var(--text); font-weight: 600; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 18px 0;
+}
+.footer-inner {
+  max-width: 1320px; margin: 0 auto; padding: 0 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 8px;
+}
+.footer-note { font-size: 11px; color: var(--text3); }
+
+/* ── LOADING ── */
+.loading-screen {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--off);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+  transition: opacity 0.3s;
+}
+.loading-screen.gone { opacity: 0; pointer-events: none; }
+.loading-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text2);
+}
+.loading-bar {
+  width: 120px; height: 1px;
+  background: var(--border2); border-radius: 1px; overflow: hidden;
+}
+.loading-fill {
+  height: 100%; background: var(--text);
+  animation: lf 1s ease-out forwards;
+}
+@keyframes lf { from { width: 0 } to { width: 100% } }
+
+/* ── ANIMATE IN ── */
+.fade-up {
+  opacity: 0; transform: translateY(8px);
+  animation: fu 0.4s ease forwards;
+}
+@keyframes fu { to { opacity: 1; transform: none; } }
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.12s; }
+.d3 { animation-delay: 0.2s; }
+.d4 { animation-delay: 0.28s; }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading">
+  <div class="loading-name">Petrosar</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-name">Petrosar</span>
+      <span class="brand-sep">—</span>
+      <span class="brand-sub">Servicios de Alimentación · Platos Principales</span>
+    </div>
+    <div class="header-meta">
+      <div class="status-pill"><div class="status-dot"></div><span id="last-updated">Cargando…</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+
+  <div class="page-title-row fade-up">
+    <h1 class="page-title">Resumen comparativo<br><em>Enero — Abril 2026</em></h1>
+  </div>
+
+  <div class="filter-row fade-up d1" id="filter-row">
+    <span class="filter-label">Período</span>
+    <button class="m-btn active" data-month="all" onclick="setMonth('all')">Todos</button>
+    <div id="month-buttons" style="display:contents"></div>
+  </div>
+
+  <div class="error-banner" id="error-banner">
+    Los datos se están mostrando desde la última versión conocida. Para conectar con Google Sheets, publicá la hoja como CSV desde Archivo → Compartir → Publicar en la web.
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip fade-up d2" id="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Total platos</div>
+      <div class="kpi-num" id="k-total">—</div>
+      <div class="kpi-sub" id="k-dias">— días trabajados</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Promedio / día</div>
+      <div class="kpi-num" id="k-avg">—</div>
+      <div class="kpi-sub">platos promedio diario</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-badge ext">Externo</div>
+      <div class="kpi-label">Clientes externos</div>
+      <div class="kpi-num c-ext" id="k-ext">—</div>
+      <div class="kpi-sub" id="k-ext-neto">neto $—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-badge int">Interno</div>
+      <div class="kpi-label">Petrosar interno</div>
+      <div class="kpi-num c-int" id="k-int">—</div>
+      <div class="kpi-sub" id="k-int-neto">neto $—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total neto</div>
+      <div class="kpi-num c-green" id="k-neto">—</div>
+      <div class="kpi-sub" id="k-precio">$— por plato</div>
+    </div>
+  </div>
+
+  <!-- DETALLE DIARIO (solo visible con un mes seleccionado) -->
+  <div class="fade-up d3" id="daily-section" style="display:none; margin-bottom:48px;">
+    <div class="sec-head">
+      <span class="sec-eyebrow" id="daily-title">Detalle diario</span>
+      <div class="sec-line"></div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Día</th>
+          <th>Total platos</th>
+          <th class="td-ext">Externos</th>
+          <th class="td-int">Interno</th>
+          <th>Total neto $</th>
+        </tr>
+      </thead>
+      <tbody id="daily-body"></tbody>
+    </table>
+  </div>
+
+  <!-- COMPARATIVO MENSUAL -->
+  <div class="fade-up d3">
+    <div class="sec-head">
+      <span class="sec-eyebrow">Comparativo mensual</span>
+      <div class="sec-line"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="chart-card">
+        <div class="chart-card-title">Platos vendidos por mes</div>
+        <div class="chart-legend">
+          <div class="cl-item"><div class="cl-swatch" style="background:var(--ext)"></div>Clientes externos</div>
+          <div class="cl-item"><div class="cl-swatch" style="background:var(--int)"></div>Petrosar interno</div>
+        </div>
+        <canvas id="c-platos-mes" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Total neto ($) por mes</div>
+        <div class="chart-legend">
+          <div class="cl-item"><div class="cl-swatch" style="background:var(--ext)"></div>Clientes externos</div>
+          <div class="cl-item"><div class="cl-swatch" style="background:var(--int)"></div>Petrosar interno</div>
+        </div>
+        <canvas id="c-neto-mes" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="chart-card">
+        <div class="chart-card-title">Promedio platos / día</div>
+        <canvas id="c-avg" height="170"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Días trabajados</div>
+        <canvas id="c-dias" height="170"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Precio promedio / plato</div>
+        <canvas id="c-precio" height="170"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sec-divider">
+
+  <!-- CLIENTES EXTERNOS -->
+  <div class="fade-up d4">
+    <div class="sec-head">
+      <span class="sec-eyebrow">Ventas</span>
+      <div class="sec-line"></div>
+    </div>
+    <div class="seg-banner ext">
+      <span class="seg-tag ext">Clientes externos</span>
+      <span class="seg-desc">Facturación y volumen de ventas al mercado externo</span>
+      <span class="seg-stat ext" id="seg-ext-total">—</span>
+    </div>
+    <div class="grid2">
+      <div class="chart-card">
+        <div class="chart-card-title">Platos vendidos — externos</div>
+        <canvas id="c-ext-platos" height="190"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Promedio diario — externos</div>
+        <canvas id="c-ext-avg" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sec-divider">
+
+  <!-- PETROSAR INTERNO -->
+  <div class="fade-up d4">
+    <div class="sec-head">
+      <span class="sec-eyebrow">Consumo interno</span>
+      <div class="sec-line"></div>
+    </div>
+    <div class="seg-banner int">
+      <span class="seg-tag int">Petrosar interno</span>
+      <span class="seg-desc">Consumo propio de la empresa, separado de ventas</span>
+      <span class="seg-stat int" id="seg-int-total">—</span>
+    </div>
+    <div class="grid2">
+      <div class="chart-card">
+        <div class="chart-card-title">Platos consumidos — interno</div>
+        <canvas id="c-int-platos" height="190"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Neto consumo interno ($)</div>
+        <canvas id="c-int-neto" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sec-divider">
+
+  <!-- TABLE -->
+  <div class="fade-up d4">
+    <div class="sec-head">
+      <span class="sec-eyebrow">Detalle</span>
+      <div class="sec-line"></div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th>Días</th>
+          <th>Total platos</th>
+          <th>Prom./día</th>
+          <th class="td-ext">Ext. platos</th>
+          <th class="td-ext">Ext. neto $</th>
+          <th class="td-int">Int. platos</th>
+          <th class="td-int">Int. neto $</th>
+          <th>Total neto $</th>
+          <th>$ / plato</th>
+        </tr>
+      </thead>
+      <tbody id="t-body"></tbody>
+      <tfoot id="t-foot"></tfoot>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-note">PETROSAR · Servicios de Alimentación · 2026</span>
+    <span class="footer-note">Datos: Google Sheets → GitHub Pages</span>
+  </div>
+</footer>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────
+const SHEET_ID = '1kPSgv2JO9N5QazSYPjcx7ITn_5W1tx2GmA6v2C8q98g';
+// gid=0 = hoja "DEBO" (detalle transacción por transacción, la que se va completando todos los días)
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
+const RUBRO_FILTRO = 'PLATOS PRINCIPALES';
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const FALLBACK = [
+  { mes:'Enero',   diasTotal:21, platosTotal:1229, avgDia:58.5, neto:16265901.99, precioAvg:13235.07,
+    ext:{ platos:1229, avg:58.5, neto:16265901.99 }, int:{ platos:0, avg:0, neto:0 }, days:[] },
+  { mes:'Febrero', diasTotal:16, platosTotal:844,  avgDia:52.8, neto:11808132.40, precioAvg:13990.68,
+    ext:{ platos:818, avg:51.1, neto:11421768.78 }, int:{ platos:26, avg:2, neto:386363.62 }, days:[] },
+  { mes:'Marzo',   diasTotal:20, platosTotal:1360, avgDia:68.0, neto:19073845.55, precioAvg:14024.89,
+    ext:{ platos:1329, avg:66.5, neto:18622192.68 }, int:{ platos:31, avg:2.4, neto:451652.87 }, days:[] },
+  { mes:'Abril',   diasTotal:7,  platosTotal:460,  avgDia:65.7, neto:6526886.59,  precioAvg:14188.88,
+    ext:{ platos:56, avg:61, neto:768628.12 }, int:{ platos:2, avg:2, neto:17685.95 }, days:[] },
+];
+
+// ─── CSV / NUMBER / FECHA HELPERS ──────────────────────────────────────────
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i+1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { result.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+function parseARNumber(s) {
+  if (!s) return 0;
+  s = s.trim();
+  if (!s) return 0;
+  const v = parseFloat(s.replace(/\./g,'').replace(',', '.'));
+  return isNaN(v) ? 0 : v;
+}
+function parseFechaDMY(s) {
+  if (!s) return null;
+  const datePart = s.trim().split(' ')[0];
+  const parts = datePart.split('/');
+  if (parts.length < 3) return null;
+  const d = parseInt(parts[0],10), m = parseInt(parts[1],10), y = parseInt(parts[2],10);
+  if (!d || !m || !y) return null;
+  return { d, m, y };
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let DATA = [];
+let active = 'all';
+let charts = {};
+
+// ─── LOAD ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const r = await fetch(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now(), { signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw new Error('fetch no-ok');
+    const text = await r.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+    if (lines.length < 2) throw new Error('CSV vacío');
+    const rows = lines.slice(1).map(parseCSVLine); // saltea encabezado
+
+    // columnas DEBO: 0 PERIODO, 1 Comprobante, 2 Fecha, 3 Cliente, 4 RUBRO MAYOR,
+    //                5 Rubro, 6 Código, 7 Producto, 8 Cantidad, 9 Neto, 10 IVA, 11 Sub-Total, 12 PLANILLA
+    const monthMap = new Map(); // 'YYYY-MM' -> { mes, year, days: Map(dayNum -> agg) }
+
+    for (const row of rows) {
+      const rubro = (row[5] || '').trim().toUpperCase();
+      if (!rubro.includes(RUBRO_FILTRO)) continue;
+      const fecha = parseFechaDMY(row[2] || '');
+      if (!fecha) continue;
+      const cliente = row[3] || '';
+      const cant = parseARNumber(row[8]);
+      const neto = parseARNumber(row[9]);
+      const isInterno = /petrosar/i.test(cliente);
+
+      const monthKey = fecha.y + '-' + String(fecha.m).padStart(2,'0');
+      if (!monthMap.has(monthKey)) monthMap.set(monthKey, { mes: MONTH_NAMES[fecha.m-1], year: fecha.y, days: new Map() });
+      const me = monthMap.get(monthKey);
+      if (!me.days.has(fecha.d)) me.days.set(fecha.d, { day: fecha.d, platos:0, neto:0, ext:{platos:0,neto:0}, int:{platos:0,neto:0} });
+      const de = me.days.get(fecha.d);
+      de.platos += cant; de.neto += neto;
+      if (isInterno) { de.int.platos += cant; de.int.neto += neto; }
+      else { de.ext.platos += cant; de.ext.neto += neto; }
+    }
+
+    const sortedKeys = Array.from(monthMap.keys()).sort();
+    if (!sortedKeys.length) throw new Error('sin registros de ' + RUBRO_FILTRO);
+
+    DATA = sortedKeys.map(key => {
+      const m = monthMap.get(key);
+      const days = Array.from(m.days.values()).sort((a,b) => a.day - b.day);
+      const platosTotal = days.reduce((s,d) => s + d.platos, 0);
+      const neto        = days.reduce((s,d) => s + d.neto, 0);
+      const extPlatos    = days.reduce((s,d) => s + d.ext.platos, 0);
+      const extNeto      = days.reduce((s,d) => s + d.ext.neto, 0);
+      const intPlatos    = days.reduce((s,d) => s + d.int.platos, 0);
+      const intNeto      = days.reduce((s,d) => s + d.int.neto, 0);
+      const diasTotal    = days.length;
+      return {
+        key, mes: m.mes, year: m.year,
+        diasTotal, platosTotal,
+        avgDia: diasTotal ? platosTotal / diasTotal : 0,
+        neto, precioAvg: platosTotal ? neto / platosTotal : 0,
+        ext: { platos: extPlatos, neto: extNeto, avg: diasTotal ? extPlatos/diasTotal : 0 },
+        int: { platos: intPlatos, neto: intNeto, avg: diasTotal ? intPlatos/diasTotal : 0 },
+        days,
+      };
+    });
+
+    document.getElementById('last-updated').textContent =
+      'Actualizado ' + new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  } catch (e) {
+    console.error('Error cargando DEBO:', e);
+    DATA = FALLBACK;
+    document.getElementById('error-banner').style.display = 'block';
+    document.getElementById('last-updated').textContent = 'Datos de referencia';
+  }
+  buildMonthButtons();
+  render();
+  document.getElementById('loading').classList.add('gone');
+}
+
+// ─── MONTH BUTTONS (dinámicos según los meses que aparecen en DEBO) ────────
+function buildMonthButtons() {
+  const box = document.getElementById('month-buttons');
+  box.innerHTML = DATA.map((r,i) => `<button class="m-btn" data-month="${i}" onclick="setMonth(${i})">${r.mes}</button>`).join('');
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────────
+function filtered() { return active === 'all' ? DATA : [DATA[active]].filter(Boolean); }
+function setMonth(m) {
+  active = m;
+  document.querySelectorAll('.m-btn').forEach(b => {
+    const bm = b.dataset.month === 'all' ? 'all' : parseInt(b.dataset.month, 10);
+    b.classList.toggle('active', bm === m);
+  });
+  render();
+}
+
+// ─── FORMATTERS ───────────────────────────────────────────────────────────
+const n0 = v => Math.round(v).toLocaleString('es-AR');
+const n1 = v => v.toFixed(1).replace('.',',');
+const money = v => {
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(2).replace('.',',') + 'M';
+  if (v >= 1e3) return '$' + (v/1e3).toFixed(0).replace('.',',') + 'K';
+  return '$' + n0(v);
+};
+const moneyFull = v => '$\u202f' + n0(v);
+
+// ─── KPIs ─────────────────────────────────────────────────────────────────
+function renderKPIs() {
+  const d = filtered();
+  const tp = d.reduce((s,r) => s + r.platosTotal, 0);
+  const td = d.reduce((s,r) => s + r.diasTotal, 0);
+  const tn = d.reduce((s,r) => s + r.neto, 0);
+  const ep = d.reduce((s,r) => s + r.ext.platos, 0);
+  const en = d.reduce((s,r) => s + r.ext.neto, 0);
+  const ip = d.reduce((s,r) => s + r.int.platos, 0);
+  const in_ = d.reduce((s,r) => s + r.int.neto, 0);
+  const avg = td > 0 ? tp/td : 0;
+  const prc = tp > 0 ? tn/tp : 0;
+
+  document.getElementById('k-total').textContent = n0(tp);
+  document.getElementById('k-dias').textContent  = n0(td) + ' días trabajados';
+  document.getElementById('k-avg').textContent   = n1(avg);
+  document.getElementById('k-ext').textContent   = n0(ep);
+  document.getElementById('k-ext-neto').textContent = 'neto ' + money(en);
+  document.getElementById('k-int').textContent   = n0(ip);
+  document.getElementById('k-int-neto').textContent = 'neto ' + money(in_);
+  document.getElementById('k-neto').textContent  = money(tn);
+  document.getElementById('k-precio').textContent = '$' + n0(prc) + ' por plato';
+  document.getElementById('seg-ext-total').textContent = n0(ep) + ' platos';
+  document.getElementById('seg-int-total').textContent = n0(ip) + ' platos';
+}
+
+// ─── CHART FACTORY ────────────────────────────────────────────────────────
+Chart.defaults.font.family = "'Bricolage Grotesque', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#9e9890';
+Chart.defaults.borderColor = '#e2ddd7';
+
+const EXT_COLOR  = '#1d5fa8';
+const INT_COLOR  = '#b84a1e';
+const GRAY_COLOR = '#9e9890';
+const LINE_EXT   = '#1d5fa8';
+const LINE_INT   = '#b84a1e';
+
+const baseScales = (yFmt) => ({
+  x: { grid: { color: '#f0ede8', drawBorder: false }, ticks: { color: '#9e9890' }, border: { display: false } },
+  y: { grid: { color: '#f0ede8', drawBorder: false }, ticks: { color: '#9e9890', callback: yFmt || (v => v) }, border: { display: false } },
+});
+const baseTT = () => ({
+  backgroundColor: '#ffffff',
+  borderColor: '#e2ddd7',
+  borderWidth: 1,
+  titleColor: '#1a1714',
+  bodyColor: '#6b6460',
+  padding: 10,
+  cornerRadius: 2,
+  titleFont: { weight: '600', size: 12 },
+});
+
+function mkChart(id, type, datasets, labels, yFmt, opts = {}) {
+  if (charts[id]) { charts[id].destroy(); }
+  const ctx = document.getElementById(id)?.getContext('2d');
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { ...baseTT(), ...opts.tt } },
+      scales: baseScales(yFmt),
+      ...opts.extra,
+    }
+  });
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────────────────
+function renderCharts() {
+  const d = filtered();
+  const lb = d.map(r => r.mes);
+
+  // Platos stacked
+  if (charts['c-platos-mes']) charts['c-platos-mes'].destroy();
+  const c1 = document.getElementById('c-platos-mes')?.getContext('2d');
+  if (c1) charts['c-platos-mes'] = new Chart(c1, {
+    type: 'bar',
+    data: { labels: lb, datasets: [
+      { label: 'Externos', data: d.map(r => r.ext.platos), backgroundColor: EXT_COLOR, borderRadius: 2, stack: 'a' },
+      { label: 'Interno',  data: d.map(r => r.int.platos), backgroundColor: INT_COLOR, borderRadius: 2, stack: 'a' },
+    ]},
+    options: { responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: baseTT() },
+      scales: { x: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } }, y: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } } }
+    }
+  });
+
+  // Neto stacked
+  if (charts['c-neto-mes']) charts['c-neto-mes'].destroy();
+  const c2 = document.getElementById('c-neto-mes')?.getContext('2d');
+  if (c2) charts['c-neto-mes'] = new Chart(c2, {
+    type: 'bar',
+    data: { labels: lb, datasets: [
+      { label: 'Externos', data: d.map(r => r.ext.neto), backgroundColor: EXT_COLOR, borderRadius: 2, stack: 'b' },
+      { label: 'Interno',  data: d.map(r => r.int.neto), backgroundColor: INT_COLOR, borderRadius: 2, stack: 'b' },
+    ]},
+    options: { responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: baseTT() },
+      scales: { x: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890' }, border: { display: false } }, y: { stacked: true, grid: { color: '#f0ede8' }, ticks: { color: '#9e9890', callback: v => money(v) }, border: { display: false } } }
+    }
+  });
+
+  mkChart('c-avg',    'line', [{ label:'Prom/día', data: d.map(r=>r.avgDia), borderColor: EXT_COLOR, backgroundColor:'rgba(29,95,168,0.06)', fill:true, tension:0.4, pointBackgroundColor:EXT_COLOR, pointRadius:4, pointHoverRadius:5 }], lb);
+  mkChart('c-dias',   'bar',  [{ label:'Días',     data: d.map(r=>r.diasTotal), backgroundColor:'#c8d9ee', borderRadius:3 }], lb);
+  mkChart('c-precio', 'line', [{ label:'$/plato',  data: d.map(r=>r.precioAvg), borderColor:'#7c6b58', backgroundColor:'rgba(124,107,88,0.05)', fill:true, tension:0.4, pointBackgroundColor:'#7c6b58', pointRadius:4 }], lb, v => '$'+n0(v));
+
+  mkChart('c-ext-platos', 'bar',  [{ label:'Platos', data:d.map(r=>r.ext.platos), backgroundColor:EXT_COLOR, borderRadius:3 }], lb);
+  mkChart('c-ext-avg',    'line', [{ label:'Prom/día', data:d.map(r=>r.ext.avg), borderColor:EXT_COLOR, backgroundColor:'rgba(29,95,168,0.07)', fill:true, tension:0.4, pointBackgroundColor:EXT_COLOR, pointRadius:4 }], lb);
+  mkChart('c-int-platos', 'bar',  [{ label:'Platos', data:d.map(r=>r.int.platos), backgroundColor:INT_COLOR, borderRadius:3 }], lb);
+  mkChart('c-int-neto',   'bar',  [{ label:'Neto $', data:d.map(r=>r.int.neto),  backgroundColor:'rgba(184,74,30,0.5)', borderRadius:3 }], lb, v => money(v));
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────
+function renderTable() {
+  const d = filtered();
+  document.getElementById('t-body').innerHTML = d.map(r => `
+    <tr>
+      <td>${r.mes} 2026</td>
+      <td>${n0(r.diasTotal)}</td>
+      <td class="td-total">${n0(r.platosTotal)}</td>
+      <td>${n1(r.avgDia)}</td>
+      <td class="td-ext">${n0(r.ext.platos)}</td>
+      <td class="td-ext">${money(r.ext.neto)}</td>
+      <td class="td-int">${n0(r.int.platos)}</td>
+      <td class="td-int">${money(r.int.neto)}</td>
+      <td class="td-total">${money(r.neto)}</td>
+      <td>$${n0(r.precioAvg)}</td>
+    </tr>`).join('');
+
+  const t = d.reduce((a,r) => ({
+    dias: a.dias+r.diasTotal, pl: a.pl+r.platosTotal, neto: a.neto+r.neto,
+    ep: a.ep+r.ext.platos, en: a.en+r.ext.neto,
+    ip: a.ip+r.int.platos, in_: a.in_+r.int.neto,
+  }), { dias:0, pl:0, neto:0, ep:0, en:0, ip:0, in_:0 });
+
+  document.getElementById('t-foot').innerHTML = `
+    <tr>
+      <td>Total</td>
+      <td>${n0(t.dias)}</td>
+      <td>${n0(t.pl)}</td>
+      <td>—</td>
+      <td class="td-ext">${n0(t.ep)}</td>
+      <td class="td-ext">${money(t.en)}</td>
+      <td class="td-int">${n0(t.ip)}</td>
+      <td class="td-int">${money(t.in_)}</td>
+      <td>${money(t.neto)}</td>
+      <td>—</td>
+    </tr>`;
+}
+
+// ─── DETALLE DIARIO ─────────────────────────────────────────────────────
+function renderDaily() {
+  const section = document.getElementById('daily-section');
+  const r = (active !== 'all') ? DATA[active] : null;
+  if (!r || !r.days || !r.days.length) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  document.getElementById('daily-title').textContent = `Detalle diario — ${r.mes}${r.year ? ' ' + r.year : ''}`;
+  document.getElementById('daily-body').innerHTML = r.days.map(d => `
+    <tr>
+      <td>${String(d.day).padStart(2,'0')}</td>
+      <td class="td-total">${n0(d.platos)}</td>
+      <td class="td-ext">${n0(d.ext.platos)}</td>
+      <td class="td-int">${n0(d.int.platos)}</td>
+      <td>${money(d.neto)}</td>
+    </tr>`).join('');
+}
+
+function render() { renderKPIs(); renderCharts(); renderTable(); renderDaily(); }
+
+loadData();
+</script>
+</body>
+</html>
