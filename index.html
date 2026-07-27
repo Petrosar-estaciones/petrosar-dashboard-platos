@@ -14,8 +14,6 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);font-family:'IBM Plex Sans',sans-serif;color:var(--text);min-height:100vh}
-
-/* HEADER */
 header{background:var(--blue-dark);color:#fff;padding:0}
 .header-top{padding:1.25rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
 .header-brand{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;font-family:'IBM Plex Mono',monospace;margin-bottom:4px}
@@ -29,23 +27,16 @@ button.btn:hover{background:rgba(255,255,255,0.2)}
 .mbtn{font-size:11px;padding:4px 10px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:'IBM Plex Mono',monospace;transition:all .15s}
 .mbtn:hover{background:rgba(255,255,255,0.1);color:#fff}
 .mbtn.active{background:#fff;color:var(--blue-dark);border-color:#fff;font-weight:500}
-
-/* MAIN */
 .main{max-width:1300px;margin:0 auto;padding:1.5rem}
-
-/* LOADING / ERROR */
 .loading{text-align:center;padding:4rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px}
 .err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6;border-radius:4px;padding:1rem;font-size:13px;margin-bottom:1rem}
-
-/* RESUMEN SECTION */
 .section-block{margin-bottom:1.5rem;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.07)}
 .section-title{padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:8px}
 .section-title .tri{font-size:8px;opacity:.7}
 .sec-general .section-title{background:var(--blue-dark);color:#fff}
 .sec-externa .section-title{background:var(--blue-mid);color:#fff}
 .sec-interna .section-title{background:var(--brown-dark);color:#fff}
-
-/* TABLE */
+.sec-daily .section-title{background:var(--green-dark);color:#fff}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface)}
 thead th{background:#f7f5f1;padding:9px 14px;text-align:right;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em}
@@ -59,8 +50,6 @@ tbody tr:hover td{background:#fafaf8}
 tbody tr:hover td:first-child{background:#fafaf8}
 td.zero{color:#ccc}
 td.neg{color:#c0392b}
-
-/* TOTALES row */
 tr.tot-row td{font-weight:600;background:#f7f5f1 !important;border-top:1px solid var(--border);color:var(--text) !important}
 tr.tot-row td:first-child{background:#f7f5f1 !important}
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;margin-bottom:1.5rem}
@@ -98,12 +87,10 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 <script>
 const CSV_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vTgHTh_rNcYXIcG4qXLXCwSSrHtjIOdBy3u-3cR7cnMB3OiOqYs921ecjdymjXoG5F_-BEIM5IWhtzA/pub?gid=0&single=true&output=csv";
 
-// Ajustá estos índices según las columnas reales del sheet
 const C={periodo:0,comprobante:1,fecha:2,cliente:3,rubroMayor:4,rubro:5,codigo:6,producto:7,cantidad:8,neto:9,iva:10,subtotal:11};
 
 let raw=[], visMonths=null, allMonths=[], chartCant=null, chartNeto=null;
 
-// ── PARSERS ────────────────────────────────────────────────────────────────
 function parseCSV(t){
   return t.trim().split('\n').map(l=>{
     const r=[];let s='';let q=false;
@@ -114,12 +101,10 @@ function parseCSV(t){
 function pn(v){const n=parseFloat((v||'').toString().replace(/[$. ]/g,'').replace(',','.'));return isNaN(n)?0:n;}
 function isNC(r){
   const comp=(r[C.comprobante]||'').toString().toUpperCase();
-  // Detecta: "B NC-...", "NC-...", "N/C", "N.C", o cantidad negativa
   return /\bNC[-\s]/.test(comp)||comp.includes('N/C')||comp.includes('N.C')||pn(r[C.cantidad])<0;
 }
 function signed(r,col){const v=Math.abs(pn(r[col]));return isNC(r)?-v:v;}
 
-// Extrae fecha como objeto Date desde string dd/mm/yyyy o similar
 function parseDate(str, periodoStr){
   if(!str)return null;
   const s=str.trim().split(' ')[0].split('T')[0];
@@ -128,21 +113,16 @@ function parseDate(str, periodoStr){
   const parts=s.split('/');
   if(parts.length===3){
     const a=parseInt(parts[0]),b=parseInt(parts[1]),yy=parseInt(parts[2]);
-    // Si a > 12, definitivamente es DD/MM/YYYY (argentino)
     if(a>12) return new Date(yy,b-1,a);
-    // Si b > 12, definitivamente es MM/DD/YYYY (americano)
     if(b>12) return new Date(yy,a-1,b);
-    // Ambiguo: usar el período (ej "2026/04") para saber el mes real
     if(periodoStr){
       const pparts=periodoStr.split('/');
       if(pparts.length===2){
         const pMes=parseInt(pparts[1]);
-        // El mes real es pMes, buscar cuál de a/b coincide
-        if(b===pMes) return new Date(yy,b-1,a); // DD/MM
-        if(a===pMes) return new Date(yy,a-1,b); // MM/DD
+        if(b===pMes) return new Date(yy,b-1,a);
+        if(a===pMes) return new Date(yy,a-1,b);
       }
     }
-    // Si no hay período, asumir argentino DD/MM
     return new Date(yy,b-1,a);
   }
   if(parts.length===1){
@@ -152,26 +132,20 @@ function parseDate(str, periodoStr){
   return null;
 }
 
-// Devuelve "Enero 2026" etc desde una fecha
 function monthLabel(d){
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   return meses[d.getMonth()]+' '+d.getFullYear();
 }
-function monthKey(d){return d.getFullYear()*100+(d.getMonth()+1);}// 202601, 202602...
+function monthKey(d){return d.getFullYear()*100+(d.getMonth()+1);}
 
-// ── AGRUPAR ────────────────────────────────────────────────────────────────
-// Detecta la sección de cada fila según rubroMayor
 function getSeccion(r){
   const cliente=(r[C.cliente]||"").toString().toUpperCase();
   return cliente.includes("PETROSAR")?"interna":"externa";
 }
 
-// Calcula métricas para un conjunto de filas filtradas por mes/sección
 function calcMetrics(rows){
   if(!rows.length)return null;
-  // días únicos con ventas
   const diasSet=new Set();
-  // ventas por día para max/min
   const ventasPorDia={};
   let totalPlatos=0,totalNeto=0;
 
@@ -198,7 +172,24 @@ function calcMetrics(rows){
   return{dias,totalPlatos,totalNeto,promPlatos,maxDia,minDia,promNeto,precioPromedio};
 }
 
-// ── RENDER ─────────────────────────────────────────────────────────────────
+// ── NUEVO: agregación diaria (para la tabla "Detalle diario") ──────────────
+function calcDaily(rows){
+  const byDay={};
+  rows.forEach(r=>{
+    const d=parseDate(r[C.fecha], r[C.periodo]);
+    if(!d)return;
+    const dk=d.toISOString().slice(0,10);
+    if(!byDay[dk])byDay[dk]={dateObj:d,platos:0,neto:0,ext:{platos:0,neto:0},int:{platos:0,neto:0}};
+    const cant=signed(r,C.cantidad);
+    const neto=signed(r,C.neto);
+    byDay[dk].platos+=cant;
+    byDay[dk].neto+=neto;
+    if(getSeccion(r)==='interna'){byDay[dk].int.platos+=cant;byDay[dk].int.neto+=neto;}
+    else{byDay[dk].ext.platos+=cant;byDay[dk].ext.neto+=neto;}
+  });
+  return Object.values(byDay).sort((a,b)=>a.dateObj-b.dateObj);
+}
+
 function fmt(v,decimals=0){
   if(v===null||v===undefined)return'—';
   return v.toLocaleString('es-AR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
@@ -249,6 +240,41 @@ function renderTable(secLabel,secClass,monthsToShow,dataByMonth){
   return html;
 }
 
+// ── NUEVO: tabla de detalle diario, solo cuando hay un único mes elegido ───
+// (días en columnas, conceptos en filas — mismo formato que las tablas de arriba)
+function renderDailyTable(days){
+  if(!days.length)return'';
+  const fechaLabel=d=>`${d.dateObj.getDate()}/${d.dateObj.getMonth()+1}`;
+  const filas=[
+    {label:'Total platos',   get:d=>d.platos,      dec:0, prefix:''},
+    {label:'Externos',       get:d=>d.ext.platos,  dec:0, prefix:''},
+    {label:'Interno',        get:d=>d.int.platos,  dec:0, prefix:''},
+    {label:'Total neto ($)', get:d=>d.neto,        dec:2, prefix:'$', separator:true},
+  ];
+
+  let html=`<div class="section-block sec-daily">
+    <div class="section-title"><span class="tri">▶</span>DETALLE DIARIO</div>
+    <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>FECHA</th>
+      ${days.map(d=>`<th>${fechaLabel(d)}</th>`).join('')}
+      <th>TOTAL</th>
+    </tr></thead>
+    <tbody>`;
+
+  filas.forEach(f=>{
+    const sep=f.separator?'separator':'';
+    html+=`<tr class="${sep}"><td>${f.label}</td>`;
+    days.forEach(d=>{html+=fmtCell(f.get(d),f.dec,f.prefix);});
+    const total=days.reduce((s,d)=>s+f.get(d),0);
+    html+=fmtCell(total,f.dec,f.prefix);
+    html+=`</tr>`;
+  });
+
+  html+=`</tbody></table></div></div>`;
+  return html;
+}
+
 function getVisMonths(){
   if(visMonths===null)return allMonths;
   return allMonths.filter(m=>m.key===visMonths);
@@ -256,7 +282,6 @@ function getVisMonths(){
 
 function render(){
   const vis=getVisMonths();
-  // Filtrar raw por meses visibles
   const rowsVis=raw.filter(r=>{
     const d=parseDate(r[C.fecha], r[C.periodo]);
     if(!d)return false;
@@ -264,11 +289,9 @@ function render(){
     return vis.some(m=>m.key===k);
   });
 
-  // Separar por sección
   const externas=rowsVis.filter(r=>getSeccion(r)==='externa');
   const internas=rowsVis.filter(r=>getSeccion(r)==='interna');
 
-  // Calcular métricas por mes para cada sección y general
   function metricsPerMonth(rows){
     const byMonth={};
     vis.forEach(m=>{
@@ -284,7 +307,6 @@ function render(){
   const metExt=metricsPerMonth(externas);
   const metInt=metricsPerMonth(internas);
 
-  // General = suma de ambas secciones
   const metGen={};
   vis.forEach(m=>{
     const e=metExt[m.key],i=metInt[m.key];
@@ -293,7 +315,6 @@ function render(){
       ...externas.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha], r[C.periodo]).toISOString().slice(0,10)),
       ...internas.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;}).map(r=>parseDate(r[C.fecha], r[C.periodo]).toISOString().slice(0,10)),
     ]).size;
-    // ventas por día general
     const allRows=rowsVis.filter(r=>{const d=parseDate(r[C.fecha], r[C.periodo]);return d&&monthKey(d)===m.key;});
     const vpd={};
     allRows.forEach(r=>{
@@ -318,9 +339,17 @@ function render(){
   });
 
   let html='';
+
+  // ── NUEVO: si hay un solo mes seleccionado, el detalle diario va primero ──
+  if(vis.length===1){
+    const days=calcDaily(rowsVis);
+    html+=renderDailyTable(days);
+  }
+
   html+=renderTable('GENERAL','sec-general',vis,metGen);
   html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
   html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
+
   html+=`<div class="charts-row">
     <div class="chart-card"><h4>Evolución mensual — Platos vendidos (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-cant"></canvas></div></div>
     <div class="chart-card"><h4>Evolución mensual — Total neto $ (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-neto"></canvas></div></div>
@@ -350,7 +379,6 @@ function render(){
   });
 }
 
-// ── MONTH STRIP ────────────────────────────────────────────────────────────
 function buildStrip(){
   const strip=document.getElementById('month-strip');
   let h=`<span>MES:</span><button class="mbtn active" onclick="setMonth(null,this)">TODOS</button>`;
@@ -367,7 +395,6 @@ function setMonth(key,btn){
   render();
 }
 
-// ── INIT ───────────────────────────────────────────────────────────────────
 async function init(){
   document.getElementById('loading').style.display='block';
   document.getElementById('app').style.display='none';
@@ -379,7 +406,6 @@ async function init(){
     const rows=parseCSV(txt);
     raw=rows.slice(1).filter(r=>r.some(c=>c.trim())&&(r[C.rubro]||'').toString().toUpperCase().includes('PLATOS PRINCIPALES'));
 
-    // Extraer meses únicos ordenados
     const monthMap=new Map();
     raw.forEach(r=>{
       const d=parseDate(r[C.fecha], r[C.periodo]);
