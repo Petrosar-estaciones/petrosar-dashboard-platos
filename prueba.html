@@ -241,22 +241,36 @@ function renderTable(secLabel,secClass,monthsToShow,dataByMonth){
 }
 
 // ── NUEVO: tabla de detalle diario, solo cuando hay un único mes elegido ───
+// (días en columnas, conceptos en filas — mismo formato que las tablas de arriba)
 function renderDailyTable(days){
   if(!days.length)return'';
+  const fechaLabel=d=>`${d.dateObj.getDate()}/${d.dateObj.getMonth()+1}`;
+  const filas=[
+    {label:'Total platos',   get:d=>d.platos,      dec:0, prefix:''},
+    {label:'Externos',       get:d=>d.ext.platos,  dec:0, prefix:''},
+    {label:'Interno',        get:d=>d.int.platos,  dec:0, prefix:''},
+    {label:'Total neto ($)', get:d=>d.neto,        dec:2, prefix:'$', separator:true},
+  ];
+
   let html=`<div class="section-block sec-daily">
     <div class="section-title"><span class="tri">▶</span>DETALLE DIARIO</div>
     <div class="tbl-wrap"><table>
-    <thead><tr><th>FECHA</th><th>TOTAL PLATOS</th><th>EXTERNOS</th><th>INTERNO</th><th>TOTAL NETO ($)</th></tr></thead>
+    <thead><tr>
+      <th>FECHA</th>
+      ${days.map(d=>`<th>${fechaLabel(d)}</th>`).join('')}
+      <th>TOTAL</th>
+    </tr></thead>
     <tbody>`;
-  days.forEach(d=>{
-    const fechaStr=d.dateObj.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
-    html+=`<tr><td>${fechaStr}</td>${fmtCell(d.platos,0)}${fmtCell(d.ext.platos,0)}${fmtCell(d.int.platos,0)}${fmtCell(d.neto,2,'$')}</tr>`;
+
+  filas.forEach(f=>{
+    const sep=f.separator?'separator':'';
+    html+=`<tr class="${sep}"><td>${f.label}</td>`;
+    days.forEach(d=>{html+=fmtCell(f.get(d),f.dec,f.prefix);});
+    const total=days.reduce((s,d)=>s+f.get(d),0);
+    html+=fmtCell(total,f.dec,f.prefix);
+    html+=`</tr>`;
   });
-  const totPlatos=days.reduce((s,d)=>s+d.platos,0);
-  const totExt=days.reduce((s,d)=>s+d.ext.platos,0);
-  const totInt=days.reduce((s,d)=>s+d.int.platos,0);
-  const totNeto=days.reduce((s,d)=>s+d.neto,0);
-  html+=`<tr class="tot-row"><td>TOTAL</td>${fmtCell(totPlatos,0)}${fmtCell(totExt,0)}${fmtCell(totInt,0)}${fmtCell(totNeto,2,'$')}</tr>`;
+
   html+=`</tbody></table></div></div>`;
   return html;
 }
@@ -325,15 +339,16 @@ function render(){
   });
 
   let html='';
-  html+=renderTable('GENERAL','sec-general',vis,metGen);
-  html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
-  html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
 
-  // ── NUEVO: si hay un solo mes seleccionado, agrego el detalle diario ──────
+  // ── NUEVO: si hay un solo mes seleccionado, el detalle diario va primero ──
   if(vis.length===1){
     const days=calcDaily(rowsVis);
     html+=renderDailyTable(days);
   }
+
+  html+=renderTable('GENERAL','sec-general',vis,metGen);
+  html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
+  html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
 
   html+=`<div class="charts-row">
     <div class="chart-card"><h4>Evolución mensual — Platos vendidos (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-cant"></canvas></div></div>
