@@ -73,6 +73,11 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .alertas{margin-top:12px;border:1px solid #f5c6c6;background:#fdf0f0;border-radius:3px;padding:10px 14px}
 .alertas.ok{border-color:#c8e6d4;background:#eef8f2}
 .alertas ul{margin:4px 0 0 18px}
+ul.resumen{margin:0 0 0 18px;padding:0}
+ul.resumen li{margin-bottom:6px}
+details.detalle{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
+details.detalle summary{cursor:pointer;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;color:var(--blue-mid);text-transform:uppercase}
+details.detalle[open] summary{margin-bottom:8px}
 .alertas li{margin-bottom:2px}
 
 /* ── COMPORTAMIENTO DE CLIENTES ── */
@@ -659,7 +664,56 @@ function renderInforme(A,cli){
 
   return`<div class="section-block sec-informe">
     <div class="section-title"><span class="lbl"><span class="tri">▶</span>INFORME EJECUTIVO</span></div>
-    <div class="informe-body" id="informe-body">${h}</div></div>`;
+    <div class="informe-body" id="informe-body">${resumenCorto(A,cli)}
+      <details class="detalle"><summary>Ver análisis completo</summary>${h}</details></div></div>`;
+}
+
+// ── Resumen corto: 5 puntos con lo esencial ──────────────────────────────
+function resumenCorto(A,cli){
+  const {byM,cerrados,curso}=A;
+  const keys=allMonths.map(m=>m.key);
+  if(!keys.length)return'';
+  const pts=[];
+  // 1. año
+  const tp=keys.reduce((s,k)=>s+byM[k].gen.platos,0), td=keys.reduce((s,k)=>s+byM[k].gen.nd,0);
+  const tcf=keys.reduce((s,k)=>s+((byM[k].grupos||{}).cf||0)+((byM[k].grupos||{}).cfe||0),0), text=keys.reduce((s,k)=>s+byM[k].ext.platos,0);
+  pts.push(`<b>Año:</b> ${fmt(tp)} platos en ${td} días (${fmt(td?tp/td:0,1)} por día). El ${fmt(text?tcf/text*100:0,0)}% de los platos externos es de mostrador (consumidor final).`);
+  // 2. último mes cerrado
+  if(cerrados.length>=2){
+    const e=explicarMes(A,cerrados[cerrados.length-1],cerrados[cerrados.length-2]);
+    const prev=cerrados.slice(0,-1), E=k=>byM[k].ext;
+    const ritmoAnio=prev.reduce((s,k)=>s+E(k).platos,0)/(prev.reduce((s,k)=>s+E(k).nd,0)||1);
+    const difAnio=E(e.k).platos-ritmoAnio*E(e.k).nd;
+    pts.push(`<b>${mesCorto(e.k)}:</b> ${fmt(e.G1.platos)} platos, ${sSgn(e.dP)} contra ${mesCorto(e.kPrev).toLowerCase()}, ${e.causa==='dias'?`sobre todo por los días trabajados (${e.G0.nd} → ${e.G1.nd})`:`sobre todo por el ritmo diario (${fmt(e.G0.prom,1)} → ${fmt(e.G1.prom,1)})`}. Frente al ritmo del año, los externos quedaron ${sSgn(difAnio)} platos.`);
+  }
+  // 3. tendencia y de dónde viene
+  if(cerrados.length>=5){
+    const E=k=>byM[k].ext;
+    const pico=cerrados.reduce((a,b)=>E(b).prom>E(a).prom?b:a);
+    const hoy=curso&&E(curso).nd?curso:cerrados[cerrados.length-1];
+    const bp=pct(E(hoy).prom,E(pico).prom);
+    const rec=cerrados.slice(-3), ant=cerrados.slice(0,-3);
+    const nd=ks=>ks.reduce((s,k)=>s+byM[k].gen.nd,0);
+    const r=(ks,g)=>ks.reduce((s,k)=>s+((byM[k].grupos||{})[g]||0),0)/(nd(ks)||1);
+    const dCF=(r(rec,'cf')+r(rec,'cfe'))-(r(ant,'cf')+r(ant,'cfe')), dEmp=r(rec,'emp')-r(ant,'emp');
+    pts.push(`<b>Tendencia:</b> el ritmo de externos pasó de ${fmt(E(pico).prom,1)} platos por día en ${mesCorto(pico).toLowerCase()} a ${fmt(E(hoy).prom,1)} hoy (${bp<=-UMBRAL_ALERTA?`<span class="down">${fmt(Math.abs(bp),0)}% menos</span>`:fPct(bp,0)}). Comparando ${mesCorto(rec[0]).toLowerCase()}–${mesCorto(rec[rec.length-1]).toLowerCase()} con ${mesCorto(ant[0]).toLowerCase()}–${mesCorto(ant[ant.length-1]).toLowerCase()}, el mostrador cambió ${sSgn(dCF,1)} y las empresas ${sSgn(dEmp,1)} platos por día.`);
+  }
+  // 4. clientes
+  const sost=cli.filter(c=>c.caida);
+  const baja=cli.filter(c=>c.estado==='En baja'||c.estado==='Sin consumo').sort((a,b)=>a.dif-b.dif);
+  if(sost.length||baja.length){
+    let t=`<b>Clientes:</b> `;
+    if(sost.length)t+=`caída sostenida en ${lista(sost.map(c=>`${esc(c.nombre)} (desde ${mesCorto(c.caida.desde).toLowerCase()}${notaCliente(c.nombre)?', parte pasó a consumidor final':''})`))}. `;
+    const bajaEmp=baja.filter(c=>!/CONSUMIDOR FINAL/i.test(c.nombre)).slice(0,2);
+    if(bajaEmp.length)t+=`En baja en ${mesCorto(cerrados[cerrados.length-1]).toLowerCase()}: ${lista(bajaEmp.map(c=>`${esc(c.nombre)} (${fPct(c.variacion,0)})`))}.`;
+    pts.push(t);
+  }else pts.push(`<b>Clientes:</b> sin caídas relevantes entre los clientes habituales.`);
+  // 5. mes en curso
+  if(curso&&cerrados.length){
+    const C_=byM[curso].gen, U=byM[cerrados[cerrados.length-1]].gen;
+    pts.push(`<b>${mesCorto(curso)} (en curso):</b> ${fmt(C_.prom,1)} platos por día, ${sPct(pct(C_.prom,U.prom))} contra ${mesCorto(cerrados[cerrados.length-1]).toLowerCase()}; con ${U.nd} días cerraría en unos ${fmt(C_.prom*U.nd)} platos.`);
+  }
+  return`<ul class="resumen">${pts.map(p=>`<li>${p}</li>`).join('')}</ul>`;
 }
 
 // Tabla: explicación de la variación de cada mes
