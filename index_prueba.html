@@ -317,6 +317,11 @@ function renderDailyTable(days){
 // Se calculan siempre sobre TODO el año (no dependen del filtro de mes).
 // ════════════════════════════════════════════════════════════════════════
 const UMBRAL_ALERTA=10;   // % de caída que dispara una alerta
+// Notas de contexto por cliente (lo que el sheet no muestra). Clave: parte del nombre del cliente.
+const NOTAS_CLIENTES={
+  'TUBOSCOPE':'parte de su personal pasó a consumir como consumidor final, así que no todo su consumo se perdió',
+};
+function notaCliente(nombre){const k=Object.keys(NOTAS_CLIENTES).find(x=>nombre.toUpperCase().includes(x.toUpperCase()));return k?NOTAS_CLIENTES[k]:'';}
 const MIN_PLATOS_CLI=5;  // diferencia mínima en platos para marcar a un cliente en baja/alza
 const PCT_HABITUAL=75;    // % mínimo de meses con consumo (enero → mes anterior al último cerrado) para ser cliente habitual
 
@@ -348,6 +353,10 @@ function aggAll(){
     if(!byM[k].porDia)byM[k].porDia={};
     byM[k].porDia[dk]=(byM[k].porDia[dk]||0)+cant;
     if(sec==='ext'){
+      const cu=(r[C.cliente]||'').toString().toUpperCase();
+      const g=cu.includes('CONSUMIDOR FINAL EMPLEADO')?'cfe':cu.includes('CONSUMIDOR FINAL')?'cf':'emp';
+      if(!byM[k].grupos)byM[k].grupos={cf:0,cfe:0,emp:0};
+      byM[k].grupos[g]+=cant;
       const nom=(r[C.cliente]||'').toString().trim().replace(/^[\d\s:.\-]+(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/,'').replace(/\s+/g,' ').toUpperCase()||'SIN NOMBRE'; // sin el código de cliente
       if(!clientes[nom])clientes[nom]={nombre:nom,porMes:{},platos:0,neto:0};
       const c=clientes[nom];
@@ -365,6 +374,29 @@ function aggAll(){
   return{byM,clientes,curso,cerrados};
 }
 
+// Busca, en todo el año, desde qué mes un cliente quedó consumiendo menos de la mitad
+// de su ritmo anterior (platos por día trabajado) sin recuperarse hasta el último mes cerrado.
+const PCT_CAIDA_SOST=50;
+function mediana(arr){if(!arr.length)return 0;const a=[...arr].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function caidaSostenida(c,A){
+  const ks=A.cerrados, v=k=>c.porMes[k]||0, nd=k=>A.byM[k].gen.nd||1;
+  const primero=ks.findIndex(k=>v(k)>0);
+  if(primero<0)return null;
+  for(let i=primero+2;i<=ks.length-2;i++){            // al menos 2 meses antes y 2 después
+    const antes=ks.slice(primero,i), despues=ks.slice(i);
+    if(antes.filter(k=>v(k)>0).length/antes.length*100<PCT_HABITUAL)continue;
+    const ritmoAntes=mediana(antes.map(k=>v(k)/nd(k)));     // mediana: un mes pico no infla la referencia
+    const mesAntes=mediana(antes.map(k=>v(k)));
+    if(mesAntes<MIN_PLATOS_CLI*2)continue;
+    if(despues.every(k=>v(k)/nd(k)<ritmoAntes*(1-PCT_CAIDA_SOST/100))){
+      const mesDesp=despues.reduce((s,k)=>s+v(k),0)/despues.length;
+      if(mesDesp>=mesAntes*(1-PCT_CAIDA_SOST/100))continue;
+      return{desde:ks[i],hasta:ks[i-1],mesAntes,mesDesp,pct:pct(mesDesp,mesAntes)};
+    }
+  }
+  return null;
+}
+
 function analizarClientes(A){
   const {clientes,cerrados,curso}=A;
   if(!cerrados.length)return[];
@@ -373,7 +405,8 @@ function analizarClientes(A){
   return Object.values(clientes).map(c=>{
     const v=k=>c.porMes[k]||0;
     const mesesCon=prev.filter(k=>v(k)>0).length;
-    const habitual=prev.length>0&&mesesCon/prev.length*100>=PCT_HABITUAL;
+    const caida=caidaSostenida(c,A);
+    const habitual=(prev.length>0&&mesesCon/prev.length*100>=PCT_HABITUAL)||!!caida;
     const u=v(ult), cur=curso?v(curso):0;
     if(!habitual)return{...c,habitual:false,mesesCon,nPrev:prev.length,base:null,ult:u,cur,variacion:null,estado:'Eventual',dif:0};
     const platosPrev=prev.reduce((s,k)=>s+v(k),0);
@@ -384,11 +417,13 @@ function analizarClientes(A){
     const dif=u-esperado;
     const variacion=esperado>0?pct(u,esperado):null;
     let estado;
-    if(u<=0)estado='Sin consumo';
+    if(caida)estado='Caída sostenida';
+    else if(u<=0&&esperado>=MIN_PLATOS_CLI)estado='Sin consumo';
+    else if(u<=0)estado='Estable';
     else if(variacion<=-UMBRAL_ALERTA&&dif<=-MIN_PLATOS_CLI)estado='En baja';
     else if(variacion>=UMBRAL_ALERTA&&dif>=MIN_PLATOS_CLI)estado='En alza';
     else estado='Estable';
-    return{...c,habitual:true,mesesCon,nPrev:prev.length,base,ritmo,esperado,ult:u,cur,variacion,estado,dif};
+    return{...c,habitual:true,mesesCon,nPrev:prev.length,base,ritmo,esperado,ult:u,cur,variacion,estado,dif,caida};
   }).sort((a,b)=>(b.habitual-a.habitual)||(b.platos-a.platos));
 }
 
@@ -420,7 +455,9 @@ function explicarMes(A,k,kPrev){
   const efRitmo=G1.nd*(G1.prom-G0.prom);        // por vender más/menos por día
   const dExt=A.byM[k].ext.platos-A.byM[kPrev].ext.platos;
   const dInt=A.byM[k].int.platos-A.byM[kPrev].int.platos;
-  const cd=Object.values(A.clientes).map(c=>({nombre:c.nombre,d:(c.porMes[k]||0)-(c.porMes[kPrev]||0)}));
+  const med=c=>mediana(A.cerrados.map(x=>c.porMes[x]||0));
+  const esPico=(c,x)=>{const val=c.porMes[x]||0,m=med(c);return val>=10&&val>2*Math.max(m,1);};
+  const cd=Object.values(A.clientes).map(c=>({nombre:c.nombre,a:c.porMes[kPrev]||0,b:c.porMes[k]||0,d:(c.porMes[k]||0)-(c.porMes[kPrev]||0),picoAnt:esPico(c,kPrev),picoAct:esPico(c,k),mesAnt:mesCorto(kPrev).toLowerCase(),mesAct:mesCorto(k).toLowerCase()}));
   const suman=cd.filter(c=>c.d>=MIN_CLI).sort((a,b)=>b.d-a.d);
   const restan=cd.filter(c=>c.d<=-MIN_CLI).sort((a,b)=>a.d-b.d);
   const sems=semanas(A.byM[k].porDia||{}).filter(w=>w.dias>=2);
@@ -440,8 +477,8 @@ function textoMes(e,conSemana=true){
   if(partes.length)t+=`La diferencia se explica ${partes.length>1?'así: ':''}${lista(partes)}; `+
     (e.causa==='dias'?`el factor principal fue la <b>cantidad de días trabajados</b>.`:`el factor principal fue el <b>ritmo de venta diario</b>.`)+' ';
   t+=`Por sección: clientes externos ${sgn(e.dExt)} y Petrosar ${sgn(e.dInt)}. `;
-  const cs=e.suman.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
-  const cr=e.restan.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
+  const cs=e.suman.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)}${c.picoAct?`, pico en ${c.mesAct}`:''})`);
+  const cr=e.restan.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)}${c.picoAnt?`, venía de un pico en ${c.mesAnt}`:''})`);
   if(sube){ if(cs.length)t+=`Los clientes que más sumaron: ${lista(cs)}. `; if(cr.length)t+=`En contra: ${lista(cr)}. `; }
   else    { if(cr.length)t+=`Los clientes que más restaron: ${lista(cr)}. `; if(cs.length)t+=`A favor: ${lista(cs)}. `; }
   if(conSemana){
@@ -495,6 +532,30 @@ function textoTendencia(A){
       t+=`El ritmo actual está ${fmt(Math.abs(bajoPico),0)}% por debajo del pico de ${mesCorto(pico)}`;
       t+=bajas>=Math.ceil((desde.length-1)/2)?` y bajó en ${bajas} de los ${desde.length-1} meses siguientes: es una <b>baja sostenida</b>, no un mes puntual.`:`.`;
     }else t+=`El ritmo se mantiene cerca del pico de ${mesCorto(pico)} (${fPct(bajoPico,0)}).`;
+    t+=`</p>`;
+  }
+  // 3b. por tipo de cliente: últimos 3 meses cerrados vs meses anteriores
+  if(cerrados.length>=5){
+    const rec=cerrados.slice(-3), ant=cerrados.slice(0,-3);
+    const nd=ks=>ks.reduce((s,k)=>s+byM[k].gen.nd,0);
+    const r=(ks,g)=>ks.reduce((s,k)=>s+((byM[k].grupos||{})[g]||0),0)/(nd(ks)||1);
+    const rp=(ks)=>ks.reduce((s,k)=>s+byM[k].int.platos,0)/(nd(ks)||1);
+    const G=[['cf','Consumidor final'],['cfe','Consumidor final empleados'],['emp','Empresas']];
+    const filas=G.map(([g,n])=>({n,a:r(ant,g),b:r(rec,g)})).concat([{n:'Petrosar (interno)',a:rp(ant),b:rp(rec)}]);
+    const tot=filas.slice(0,3).reduce((s,f)=>s+(f.b-f.a),0);
+    const rango1=`${mesCorto(ant[0]).toLowerCase()}–${mesCorto(ant[ant.length-1]).toLowerCase()}`, rango2=`${mesCorto(rec[0]).toLowerCase()}–${mesCorto(rec[rec.length-1]).toLowerCase()}`;
+    t+=`<p><b>¿De dónde viene el cambio de ritmo?</b> Comparando platos por día trabajado de ${rango1} contra ${rango2}: `+
+      filas.map(f=>`${f.n} ${fmt(f.a,1)} → ${fmt(f.b,1)} (${sSgn(f.b-f.a,1)})`).join('; ')+`. `;
+    const ord=filas.slice(0,3).filter(f=>f.b-f.a<0).sort((x,y)=>(x.b-x.a)-(y.b-y.a));
+    if(tot<0&&ord.length)t+=`De los ${fmt(Math.abs(tot),1)} platos por día que se perdieron en clientes externos, ${lista(ord.map(f=>`${fmt(Math.abs(f.b-f.a),1)} corresponden a ${f.n.toLowerCase()} (${fmt(Math.abs((f.b-f.a)/tot*100),0)}%)`))}.`;
+    // cuánto explican las caídas sostenidas de empresas
+    const cliS=analizarClientes(A).filter(c=>c.caida&&rec.every(k=>k>=c.caida.desde));
+    if(cliS.length){
+      const porDia=cliS.reduce((s,c)=>s+(c.caida.mesAntes-c.caida.mesDesp),0)/(nd(rec)/rec.length||1);
+      t+=` Solo los clientes con caída sostenida (${lista(cliS.map(c=>esc(c.nombre)))}) explican unos ${fmt(porDia,1)} platos por día de esa baja.`;
+      const conNota=cliS.filter(c=>notaCliente(c.nombre));
+      if(conNota.length)t+=` Ojo: ${lista(conNota.map(c=>`en ${esc(c.nombre)}, ${notaCliente(c.nombre)}`))}; por eso parte de esa baja de empresas reaparece como consumidor final, y la caída real del mostrador habitual es algo mayor que la que se ve.`;
+    }
     t+=`</p>`;
   }
   // 4. conclusión
@@ -568,16 +629,22 @@ function renderInforme(A,cli){
     const hab=cli.filter(c=>c.habitual), ev=cli.filter(c=>!c.habitual);
     const rango=`${mesCorto(cerrados[0]).toLowerCase()} a ${mesCorto(cerrados[cerrados.length-2]).toLowerCase()}`;
     const baja=cnt('En baja').sort((a,b)=>a.dif-b.dif), sin=cnt('Sin consumo').sort((a,b)=>a.dif-b.dif), alza=cnt('En alza').sort((a,b)=>b.dif-a.dif);
-    h+=`<h5>Comportamiento de clientes habituales</h5><p>Se consideran habituales los clientes externos que consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}: son <b>${hab.length}</b>. Comparando lo que consumió cada uno en ${ult} contra lo esperado según su ritmo por día trabajado en ese período (y con los ${A.byM[cerrados[cerrados.length-1]].gen.nd} días trabajados de ${ult}): ${baja.length} en baja, ${alza.length} en alza, ${cnt('Estable').length} estables y ${sin.length} sin consumo.`;
+    h+=`<h5>Comportamiento de clientes habituales</h5><p>Se consideran habituales los clientes externos que consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}: son <b>${hab.length}</b>. Comparando lo que consumió cada uno en ${ult} contra lo esperado según su ritmo por día trabajado en ese período (y con los ${A.byM[cerrados[cerrados.length-1]].gen.nd} días trabajados de ${ult}): ${baja.length} en baja, ${alza.length} en alza, ${cnt('Estable').length} ${cnt('Estable').length===1?'estable':'estables'}, ${sin.length} sin consumo y ${cnt('Caída sostenida').length} con caída sostenida.`;
     const totExt=cli.reduce((s,c)=>s+c.platos,0);
     const top=hab.slice(0,5);
     if(top.length)h+=` Los principales clientes del año son ${lista(top.map(c=>`<b>${esc(c.nombre)}</b> (${fmt(totExt?c.platos/totExt*100:0,1)}% de los platos externos, promedio ${fmt(c.base,0)} por mes, en ${ult} ${fmt(c.ult)} contra ${fmt(c.esperado,0)} esperados: ${c.estado.toLowerCase()})`))}.`;
+    const sost=cli.filter(c=>c.caida).sort((a,b)=>(a.caida.mesDesp-a.caida.mesAntes)-(b.caida.mesDesp-b.caida.mesAntes));
     if(baja.length)h+=` Las mayores caídas: ${lista(baja.slice(0,3).map(c=>`${esc(c.nombre)} (esperado ${fmt(c.esperado,0)}, consumió ${fmt(c.ult)}, ${fPct(c.variacion,0)})`))}.`;
     if(sin.length)h+=` No consumieron en ${ult}: ${lista(sin.slice(0,5).map(c=>`${esc(c.nombre)} (esperaba unos ${fmt(c.esperado,0)} platos)`))}${sin.length>5?` y ${sin.length-5} más`:''}.`;
     if(alza.length)h+=` Los que más crecieron: ${lista(alza.slice(0,3).map(c=>`${esc(c.nombre)} (${fPct(c.variacion,0)})`))}.`;
     if(ev.length){const pEv=ev.reduce((s,c)=>s+c.platos,0), pEvU=ev.reduce((s,c)=>s+c.ult,0);
       h+=` Además hubo <b>${ev.length} clientes eventuales</b>, que no se comparan contra un promedio: sumaron ${fmt(pEv)} platos en el año${pEvU?` (${fmt(pEvU)} en ${ult})`:''}.`;}
     h+=`</p>`;
+    if(sost.length){
+      h+=`<h5>Caídas sostenidas en el año</h5><p>`+sost.map(c=>`<b>${esc(c.nombre)}</b> venía consumiendo unos ${fmt(c.caida.mesAntes,0)} platos por mes hasta ${mesCorto(c.caida.hasta).toLowerCase()}; desde ${mesCorto(c.caida.desde).toLowerCase()} promedia ${fmt(c.caida.mesDesp,0)} por mes (${fPct(c.caida.pct,0)}), sin recuperarse.${notaCliente(c.nombre)?` <i>Nota: ${notaCliente(c.nombre)}.</i>`:''}`).join(' ')+
+         ` En total son unos <b>${fmt(sost.reduce((s,c)=>s+c.caida.mesAntes-c.caida.mesDesp,0))} platos por mes</b> menos que antes de cada caída.</p>`;
+      alertas.push(`${sost.length===1?'1 cliente con caída sostenida':`${sost.length} clientes con caída sostenida`} en el año: ${lista(sost.slice(0,4).map(c=>`${esc(c.nombre)} (desde ${mesCorto(c.caida.desde).toLowerCase()}, ${fPct(c.caida.pct,0)})`))}.`);
+    }
     const perdidos=[...baja,...sin].reduce((s,c)=>s+c.dif,0);
     if(baja.length+sin.length){
       const kAnt=cerrados[cerrados.length-2];
@@ -601,7 +668,7 @@ function renderVariaciones(A){
   if(cerrados.length<2)return'';
   const vars=[];
   for(let i=1;i<cerrados.length;i++)vars.push(explicarMes(A,cerrados[i],cerrados[i-1]));
-  const cliCell=arr=>arr.length?arr.slice(0,2).map(c=>`${esc(c.nombre)} <span class="${c.d>0?'up':'down'}">${sgn(c.d)}</span>`).join('<br>'):'<span class="zero">—</span>';
+  const cliCell=arr=>arr.length?arr.slice(0,2).map(c=>`${esc(c.nombre)} <span class="${c.d>0?'up':'down'}">${sgn(c.d)}</span> <span class="sub">(${fmt(c.a)} → ${fmt(c.b)})${c.d<0&&c.picoAnt?` · ${c.mesAnt} fue un pico`:''}${c.d>0&&c.picoAct?` · ${c.mesAct} es un pico`:''}</span>`).join('<br>'):'<span class="zero">—</span>';
   let h=`<div class="section-block sec-var">
     <div class="section-title"><span class="tri">▶</span>QUÉ EXPLICA CADA VARIACIÓN — PLATOS, MES CONTRA MES ANTERIOR</div>
     <div class="cli-note"><b>Efecto días</b>: platos ganados o perdidos por trabajar más o menos días. <b>Efecto ritmo</b>: platos ganados o perdidos porque se vendió más o menos por día. Los dos suman la variación total.</div>
@@ -633,7 +700,7 @@ function copiarInforme(btn){
   function fallback(){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){}ta.remove();}
 }
 
-const BADGE={'En baja':'b-baja','Sin consumo':'b-sin','En alza':'b-alza','Estable':'b-estable','Nuevo':'b-nuevo','Reactivado':'b-react','Inactivo':'b-inact','Eventual':'b-inact'};
+const BADGE={'En baja':'b-baja','Sin consumo':'b-sin','En alza':'b-alza','Estable':'b-estable','Nuevo':'b-nuevo','Reactivado':'b-react','Inactivo':'b-inact','Eventual':'b-inact','Caída sostenida':'b-sin'};
 
 function renderClientes(A,cliTodos){
   const {cerrados,curso}=A;
@@ -642,16 +709,16 @@ function renderClientes(A,cliTodos){
   const keys=allMonths.map(m=>m.key);
   const ult=cerrados.length?mesCorto(cerrados[cerrados.length-1]):'—';
   const totP=cliTodos.reduce((s,c)=>s+c.platos,0);
-  const estados=['En baja','Sin consumo','En alza','Estable'].filter(e=>cli.some(c=>c.estado===e));
+  const estados=['Caída sostenida','En baja','Sin consumo','En alza','Estable'].filter(e=>cli.some(c=>c.estado===e));
   const rango=cerrados.length>1?`${mesCorto(cerrados[0]).toLowerCase()} a ${mesCorto(cerrados[cerrados.length-2]).toLowerCase()}`:'—';
   const rangoCorto=cerrados.length>1?`${mesCorto(cerrados[0]).slice(0,3)}–${mesCorto(cerrados[cerrados.length-2]).slice(0,3)}`.toUpperCase():'—';
   let h=`<div class="section-block sec-clientes">
     <div class="section-title"><span class="tri">▶</span>COMPORTAMIENTO DE CLIENTES HABITUALES — PLATOS POR MES</div>
-    <div class="cli-note"><b>Habituales</b>: consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}; <b>Esperado</b> = su ritmo de platos por día trabajado en ese período × los días trabajados en <b>${ult}</b>, así los meses con más o menos días no distorsionan. Baja/alza = variación de ${UMBRAL_ALERTA}% o más <b>y</b> al menos ${MIN_PLATOS_CLI} platos de diferencia. Los clientes eventuales (compras ocasionales) no se incluyen en esta tabla.${curso?` ${mesCorto(curso)} está en curso y se muestra en gris.`:''}</div>
+    <div class="cli-note"><b>Habituales</b>: consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}; <b>Caída sostenida</b> = desde ese mes y hasta hoy consume menos de la mitad de lo que consumía antes, sin recuperarse (se analiza todo el año). <b>Esperado</b> = su ritmo de platos por día trabajado en ese período × los días trabajados en <b>${ult}</b>, así los meses con más o menos días no distorsionan. Baja/alza = variación de ${UMBRAL_ALERTA}% o más <b>y</b> al menos ${MIN_PLATOS_CLI} platos de diferencia. Los clientes eventuales (compras ocasionales) no se incluyen en esta tabla.${curso?` ${mesCorto(curso)} está en curso y se muestra en gris.`:''}</div>
     <div class="chips"><span class="chip active" onclick="filtrarCli(null,this)">TODOS (${cli.length})</span>${estados.map(e=>`<span class="chip" onclick="filtrarCli('${e}',this)">${e.toUpperCase()} (${cli.filter(c=>c.estado===e).length})</span>`).join('')}</div>
     <div class="tbl-wrap"><table id="tbl-cli"><thead><tr>
       <th>CLIENTE</th>${keys.map(k=>`<th>${mesCorto(k).toUpperCase().slice(0,3)}</th>`).join('')}
-      <th>TOTAL</th><th>PART.</th><th>NETO $</th><th>MESES CON CONS.</th><th>ESPERADO ${ult.toUpperCase()}</th><th>${ult.toUpperCase()}</th><th>VAR.</th><th>ESTADO</th>
+      <th>TOTAL</th><th>PART.</th><th>NETO $</th><th>MESES CON CONS.</th><th>ESPERADO ${ult.toUpperCase()}</th><th>${ult.toUpperCase()}</th><th>VAR.</th><th>ESTADO</th><th>CAÍDA SOSTENIDA</th>
     </tr></thead><tbody>`;
   let sepEv=false;
   cli.forEach(c=>{
@@ -664,7 +731,7 @@ function renderClientes(A,cliTodos){
     });
     h+=fmtCell(c.platos)+`<td>${fmt(totP?c.platos/totP*100:0,1)}%</td>`+fmtCell(c.neto,0,'$')
       +`<td>${c.mesesCon}/${c.nPrev}</td><td>${c.esperado?fmt(c.esperado,0):'—'}<br><span style="font-size:10px;color:#888">${fmt(c.ritmo,2)} /día</span></td>`+fmtCell(c.ult)
-      +`<td>${c.variacion===null||!c.habitual?'—':sPct(c.variacion)}</td><td><span class="badge ${BADGE[c.estado]}">${c.estado}</span></td></tr>`;
+      +`<td>${c.variacion===null||!c.habitual?'—':sPct(c.variacion)}</td><td><span class="badge ${BADGE[c.estado]}">${c.estado}</span></td><td style="text-align:left;font-size:11px;white-space:normal;min-width:150px">${c.caida?`Desde ${mesCorto(c.caida.desde).toLowerCase()}: de ${fmt(c.caida.mesAntes,0)} a ${fmt(c.caida.mesDesp,0)} platos/mes <span class="down">(${fPct(c.caida.pct,0)})</span>`:'—'}${notaCliente(c.nombre)?`<br><i style="color:#888">Nota: ${notaCliente(c.nombre)}.</i>`:''}</td></tr>`;
   });
   h+=`</tbody></table></div></div>`;
   return h;
