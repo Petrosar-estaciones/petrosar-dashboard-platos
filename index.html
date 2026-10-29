@@ -57,6 +57,43 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem}
 .chart-card h4{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1rem}
 .chart-card .chart-wrap{position:relative;height:200px}
+
+/* ── INFORME EJECUTIVO ── */
+.sec-informe .section-title{background:#2b2b28;color:#fff;justify-content:space-between}
+.sec-informe .section-title .lbl{display:flex;align-items:center;gap:8px}
+.copy-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:4px 10px;font-size:10px;cursor:pointer;border-radius:3px;font-family:'IBM Plex Mono',monospace;letter-spacing:.05em}
+.copy-btn:hover{background:rgba(255,255,255,0.22)}
+.informe-body{background:var(--surface);padding:18px 22px;font-size:13px;line-height:1.7;color:#2a2a28}
+.informe-body h5{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:14px 0 4px;font-weight:500}
+.informe-body h5:first-child{margin-top:0}
+.informe-body p{margin-bottom:4px}
+.informe-body b{font-weight:600}
+.up{color:#1a7a4a;font-weight:600}
+.down{color:#c0392b;font-weight:600}
+.alertas{margin-top:12px;border:1px solid #f5c6c6;background:#fdf0f0;border-radius:3px;padding:10px 14px}
+.alertas.ok{border-color:#c8e6d4;background:#eef8f2}
+.alertas ul{margin:4px 0 0 18px}
+.alertas li{margin-bottom:2px}
+
+/* ── COMPORTAMIENTO DE CLIENTES ── */
+.sec-clientes .section-title{background:#4a235a;color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;background:#faf8f5;border-bottom:1px solid var(--border)}
+.chip{font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:'IBM Plex Mono',monospace;color:#444}
+.chip.active{background:#4a235a;color:#fff;border-color:#4a235a}
+.cli-note{padding:8px 14px;font-size:11px;color:var(--muted);background:#faf8f5;border-bottom:1px solid var(--border)}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.b-baja{background:#fadbd8;color:#922b21}
+.b-sin{background:#c0392b;color:#fff}
+.b-alza{background:#d5f5e3;color:#0a4a2c}
+.b-estable{background:#eaeaea;color:#555}
+.b-nuevo{background:#d6eaf8;color:#1a3a5c}
+.b-react{background:#e8daef;color:#4a235a}
+.b-inact{background:#f2f2f2;color:#999}
+td.curso{font-style:italic;color:#999}
+.sec-var .section-title{background:#5c4a1a;color:#fff}
+.tbl-var td{vertical-align:top;line-height:1.5}
+.tbl-var td.txt{text-align:left;font-family:'IBM Plex Sans',sans-serif;font-size:11px;white-space:normal;min-width:170px}
+.tbl-var .sub{font-size:10px;color:var(--muted)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
@@ -275,6 +312,313 @@ function renderDailyTable(days){
   return html;
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// INFORME EJECUTIVO + COMPORTAMIENTO DE CLIENTES
+// Se calculan siempre sobre TODO el año (no dependen del filtro de mes).
+// ════════════════════════════════════════════════════════════════════════
+const UMBRAL_ALERTA=10;   // % de caída que dispara una alerta
+const PCT_HABITUAL=75;    // % mínimo de meses con consumo (enero → mes anterior al último cerrado) para ser cliente habitual
+
+function nb(){return{platos:0,neto:0,dias:new Set()};}
+function mesCorto(key){const m=allMonths.find(x=>x.key===key);return m?m.label.split(' ')[0]:String(key);}
+function pct(a,b){return b?((a-b)/Math.abs(b))*100:null;}
+function fPct(v,dec=1){
+  if(v===null||!isFinite(v))return'—';
+  const s=Math.abs(v).toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec})+'%';
+  return v>0?'+'+s:v<0?'−'+s:s;
+}
+function sPct(v){ // porcentaje coloreado
+  if(v===null||!isFinite(v))return'—';
+  return`<span class="${v>0?'up':v<0?'down':''}">${fPct(v)}</span>`;
+}
+function f$(v,dec=0){return'$'+fmt(v,dec);}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function lista(arr){return arr.length<=1?arr.join(''):arr.slice(0,-1).join(', ')+' y '+arr[arr.length-1];}
+
+function aggAll(){
+  const byM={}, clientes={};
+  raw.forEach(r=>{
+    const d=parseDate(r[C.fecha],r[C.periodo]); if(!d)return;
+    const k=monthKey(d), dk=d.toISOString().slice(0,10);
+    const cant=signed(r,C.cantidad), neto=signed(r,C.neto);
+    if(!byM[k])byM[k]={gen:nb(),ext:nb(),int:nb()};
+    const sec=getSeccion(r)==='interna'?'int':'ext';
+    [byM[k].gen,byM[k][sec]].forEach(b=>{b.platos+=cant;b.neto+=neto;b.dias.add(dk);});
+    if(!byM[k].porDia)byM[k].porDia={};
+    byM[k].porDia[dk]=(byM[k].porDia[dk]||0)+cant;
+    if(sec==='ext'){
+      const nom=(r[C.cliente]||'').toString().trim().replace(/^[\d\s:.\-]+(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/,'').replace(/\s+/g,' ').toUpperCase()||'SIN NOMBRE'; // sin el código de cliente
+      if(!clientes[nom])clientes[nom]={nombre:nom,porMes:{},platos:0,neto:0};
+      const c=clientes[nom];
+      c.porMes[k]=(c.porMes[k]||0)+cant; c.platos+=cant; c.neto+=neto;
+    }
+  });
+  Object.values(byM).forEach(m=>['gen','ext','int'].forEach(s=>{
+    const b=m[s]; b.nd=b.dias.size; b.prom=b.nd?b.platos/b.nd:0; b.precio=b.platos?b.neto/b.platos:0;
+  }));
+  // Mes en curso = último mes cargado si coincide con el mes calendario actual
+  const hoy=monthKey(new Date());
+  const keys=allMonths.map(m=>m.key);
+  const curso=keys.length&&keys[keys.length-1]===hoy?hoy:null;
+  const cerrados=keys.filter(k=>k!==curso);
+  return{byM,clientes,curso,cerrados};
+}
+
+function analizarClientes(A){
+  const {clientes,cerrados,curso}=A;
+  if(!cerrados.length)return[];
+  const ult=cerrados[cerrados.length-1];
+  const prev=cerrados.slice(0,-1);          // enero → mes anterior al último cerrado
+  return Object.values(clientes).map(c=>{
+    const v=k=>c.porMes[k]||0;
+    const mesesCon=prev.filter(k=>v(k)>0).length;
+    const habitual=prev.length>0&&mesesCon/prev.length*100>=PCT_HABITUAL;
+    const u=v(ult), cur=curso?v(curso):0;
+    if(!habitual)return{...c,habitual:false,mesesCon,nPrev:prev.length,base:null,ult:u,cur,variacion:null,estado:'Eventual',dif:0};
+    const base=prev.reduce((s,k)=>s+v(k),0)/prev.length;
+    const variacion=base>0?pct(u,base):null;
+    let estado;
+    if(u<=0)estado='Sin consumo';
+    else if(variacion<=-UMBRAL_ALERTA)estado='En baja';
+    else if(variacion>=UMBRAL_ALERTA)estado='En alza';
+    else estado='Estable';
+    return{...c,habitual:true,mesesCon,nPrev:prev.length,base,ult:u,cur,variacion,estado,dif:u-base};
+  }).sort((a,b)=>(b.habitual-a.habitual)||(b.platos-a.platos));
+}
+
+// ── Análisis de variaciones: qué explica cada cambio mes a mes ──────────
+const DIAS_SEM=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MIN_CLI=5; // platos mínimos de diferencia para mencionar a un cliente
+
+function semanas(porDia){
+  // agrupa los días del mes por semana (lunes a domingo)
+  const s={};
+  Object.entries(porDia).forEach(([dk,p])=>{
+    const d=new Date(dk+'T12:00:00');
+    const lun=new Date(d); lun.setDate(d.getDate()-((d.getDay()+6)%7));
+    const key=lun.toISOString().slice(0,10);
+    if(!s[key])s[key]={inicio:d,platos:0,dias:0};
+    if(d<s[key].inicio)s[key].inicio=d;
+    s[key].platos+=p; s[key].dias++;
+  });
+  return Object.values(s).map(w=>({...w,prom:w.platos/w.dias})).sort((a,b)=>a.inicio-b.inicio);
+}
+function fSem(w){return`${w.inicio.getDate()}/${w.inicio.getMonth()+1}`;}
+function sgn(v,dec=0){return(v>0?'+':v<0?'−':'')+fmt(Math.abs(v),dec);}
+function sSgn(v,dec=0){return`<span class="${v>0?'up':v<0?'down':''}">${sgn(v,dec)}</span>`;}
+
+function explicarMes(A,k,kPrev){
+  const G1=A.byM[k].gen, G0=A.byM[kPrev].gen;
+  const dP=G1.platos-G0.platos;
+  const efDias=(G1.nd-G0.nd)*G0.prom;          // por trabajar más/menos días
+  const efRitmo=G1.nd*(G1.prom-G0.prom);        // por vender más/menos por día
+  const dExt=A.byM[k].ext.platos-A.byM[kPrev].ext.platos;
+  const dInt=A.byM[k].int.platos-A.byM[kPrev].int.platos;
+  const cd=Object.values(A.clientes).map(c=>({nombre:c.nombre,d:(c.porMes[k]||0)-(c.porMes[kPrev]||0)}));
+  const suman=cd.filter(c=>c.d>=MIN_CLI).sort((a,b)=>b.d-a.d);
+  const restan=cd.filter(c=>c.d<=-MIN_CLI).sort((a,b)=>a.d-b.d);
+  const sems=semanas(A.byM[k].porDia||{}).filter(w=>w.dias>=2);
+  const floja=sems.length?sems.reduce((a,b)=>b.prom<a.prom?b:a):null;
+  const fuerte=sems.length?sems.reduce((a,b)=>b.prom>a.prom?b:a):null;
+  const causa=Math.abs(efDias)>Math.abs(efRitmo)?'dias':'ritmo';
+  return{k,kPrev,G1,G0,dP,vP:pct(G1.platos,G0.platos),efDias,efRitmo,dExt,dInt,suman,restan,floja,fuerte,causa};
+}
+
+function textoMes(e,conSemana=true){
+  const M=mesCorto(e.k), P=mesCorto(e.kPrev);
+  const sube=e.dP>=0;
+  let t=`<b>${M}</b> cerró con ${fmt(e.G1.platos)} platos, ${sSgn(e.dP)} (${sPct(e.vP)}) respecto a ${P}. `;
+  const partes=[];
+  if(Math.round(e.efDias)!==0)partes.push(`${sgn(e.efDias)} por haber trabajado ${e.G1.nd} días contra ${e.G0.nd}`);
+  if(Math.round(e.efRitmo)!==0)partes.push(`${sgn(e.efRitmo)} porque el promedio diario ${e.G1.prom>=e.G0.prom?'subió':'bajó'} de ${fmt(e.G0.prom,1)} a ${fmt(e.G1.prom,1)} platos`);
+  if(partes.length)t+=`La diferencia se explica ${partes.length>1?'así: ':''}${lista(partes)}; `+
+    (e.causa==='dias'?`el factor principal fue la <b>cantidad de días trabajados</b>.`:`el factor principal fue el <b>ritmo de venta diario</b>.`)+' ';
+  t+=`Por sección: clientes externos ${sgn(e.dExt)} y Petrosar ${sgn(e.dInt)}. `;
+  const cs=e.suman.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
+  const cr=e.restan.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
+  if(sube){ if(cs.length)t+=`Los clientes que más sumaron: ${lista(cs)}. `; if(cr.length)t+=`En contra: ${lista(cr)}. `; }
+  else    { if(cr.length)t+=`Los clientes que más restaron: ${lista(cr)}. `; if(cs.length)t+=`A favor: ${lista(cs)}. `; }
+  if(conSemana){
+    if(!sube&&e.floja)t+=`La baja se notó más en la semana del ${fSem(e.floja)}, con ${fmt(e.floja.prom,1)} platos por día.`;
+    else if(sube&&e.fuerte)t+=`La semana más fuerte fue la del ${fSem(e.fuerte)}, con ${fmt(e.fuerte.prom,1)} platos por día.`;
+  }
+  return t;
+}
+
+function patronSemanal(A){
+  const s={};
+  Object.keys(A.byM).filter(k=>+k!==A.curso).forEach(k=>Object.entries(A.byM[k].porDia||{}).forEach(([dk,p])=>{
+    const w=new Date(dk+'T12:00:00').getDay();
+    if(!s[w])s[w]={p:0,n:0}; s[w].p+=p; s[w].n++;
+  }));
+  return Object.entries(s).filter(([,v])=>v.n>=3).map(([w,v])=>({dia:DIAS_SEM[w],prom:v.p/v.n,n:v.n})).sort((a,b)=>b.prom-a.prom);
+}
+
+function renderInforme(A,cli){
+  const {byM,cerrados,curso}=A;
+  const keys=allMonths.map(m=>m.key);
+  if(!keys.length)return'';
+  const tot=keys.reduce((t,k)=>{const g=byM[k];t.p+=g.gen.platos;t.n+=g.gen.neto;t.d+=g.gen.nd;t.pe+=g.ext.platos;t.pi+=g.int.platos;return t;},{p:0,n:0,d:0,pe:0,pi:0});
+  const anio=Math.floor(keys[0]/100);
+  let h=`<h5>Resumen del período</h5><p>En lo que va de ${anio} (${mesCorto(keys[0]).toLowerCase()} a ${mesCorto(keys[keys.length-1]).toLowerCase()}${curso?', este último en curso':''}) se vendieron <b>${fmt(tot.p)} platos</b> por un neto de <b>${f$(tot.n)}</b>, en ${fmt(tot.d)} días trabajados (promedio de ${fmt(tot.d?tot.p/tot.d:0,1)} platos por día). De ese total, ${fmt(tot.pe)} platos (${fmt(tot.p?tot.pe/tot.p*100:0,1)}%) corresponden a clientes externos y ${fmt(tot.pi)} (${fmt(tot.p?tot.pi/tot.p*100:0,1)}%) a consumo interno de Petrosar.</p>`;
+
+  const alertas=[];
+  const g=k=>byM[k].gen;
+  const vars=[];
+  for(let i=1;i<cerrados.length;i++)vars.push(explicarMes(A,cerrados[i],cerrados[i-1]));
+
+  if(cerrados.length){
+    // Comportamiento general del año
+    const porPlatos=[...cerrados].sort((a,b)=>g(b).platos-g(a).platos);
+    const porRitmo=[...cerrados].sort((a,b)=>g(b).prom-g(a).prom);
+    const mej=porPlatos[0], peo=porPlatos[porPlatos.length-1];
+    h+=`<h5>Comportamiento del año</h5><p>`;
+    if(cerrados.length>1){
+      h+=`El mes con más platos fue <b>${mesCorto(mej)}</b> (${fmt(g(mej).platos)} platos en ${g(mej).nd} días, ${fmt(g(mej).prom,1)} por día) y el de menos fue <b>${mesCorto(peo)}</b> (${fmt(g(peo).platos)} platos en ${g(peo).nd} días, ${fmt(g(peo).prom,1)} por día).`;
+      if(porRitmo[0]!==mej)h+=` Si se mira el ritmo diario, que no depende de cuántos días se trabajó, el mejor mes fue <b>${mesCorto(porRitmo[0])}</b> con ${fmt(g(porRitmo[0]).prom,1)} platos por día.`;
+      const sube=[...vars].sort((a,b)=>b.dP-a.dP)[0], baja=[...vars].sort((a,b)=>a.dP-b.dP)[0];
+      const porque=e=>e.causa==='dias'?`principalmente por la cantidad de días trabajados (${e.G0.nd} → ${e.G1.nd})`:`principalmente por el ritmo diario (${fmt(e.G0.prom,1)} → ${fmt(e.G1.prom,1)} platos por día)`;
+      const cliTxt=(arr)=>arr.length?`, con ${lista(arr.slice(0,2).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`))} como principal${arr.length>1?'es':''} responsable${arr.length>1?'s':''}`:'';
+      if(sube&&sube.dP>0)h+=` La mayor suba fue en <b>${mesCorto(sube.k)}</b>: ${sSgn(sube.dP)} platos respecto a ${mesCorto(sube.kPrev)}, ${porque(sube)}${cliTxt(sube.suman)}.`;
+      if(baja&&baja.dP<0)h+=` La caída más marcada fue en <b>${mesCorto(baja.k)}</b>: ${sSgn(baja.dP)} platos respecto a ${mesCorto(baja.kPrev)}, ${porque(baja)}${cliTxt(baja.restan)}${baja.floja?`; la semana más floja fue la del ${fSem(baja.floja)} (${fmt(baja.floja.prom,1)} por día)`:''}.`;
+    }else h+=`Hay un solo mes cerrado (${mesCorto(mej)}), todavía no hay comparación posible.`;
+    const pat=patronSemanal(A);
+    if(pat.length>=2){
+      const top=pat[0], low=pat[pat.length-1];
+      h+=` Por día de la semana, el más fuerte es el <b>${top.dia}</b> (${fmt(top.prom,1)} platos en promedio) y el más flojo el <b>${low.dia}</b> (${fmt(low.prom,1)}).`;
+    }
+    h+=`</p>`;
+
+    // Último mes cerrado, explicado
+    if(vars.length){
+      h+=`<h5>Qué pasó en el último mes cerrado</h5><p>${textoMes(vars[vars.length-1])}</p>`;
+    }
+    // Alertas de caída mes a mes (solo volumen)
+    vars.forEach(e=>{
+      if(e.vP!==null&&e.vP<=-UMBRAL_ALERTA)alertas.push(`<b>${mesCorto(e.k)}</b> cayó ${fPct(e.vP)} en platos respecto a ${mesCorto(e.kPrev)} (${e.causa==='dias'?'por menos días trabajados':'por menor ritmo diario'}).`);
+    });
+  }
+
+  // Mes en curso
+  if(curso&&cerrados.length){
+    const C_=byM[curso].gen, U=byM[cerrados[cerrados.length-1]].gen;
+    const vd=pct(C_.prom,U.prom);
+    h+=`<h5>Mes en curso</h5><p><b>${mesCorto(curso)}</b> lleva ${C_.nd} días cargados con ${fmt(C_.platos)} platos. Promedia ${fmt(C_.prom,1)} platos por día, ${sPct(vd)} frente al promedio diario de ${mesCorto(cerrados[cerrados.length-1])}${C_.nd&&U.prom?`; a ese ritmo y con los mismos ${U.nd} días trabajados cerraría en unos ${fmt(C_.prom*U.nd)} platos`:''}.</p>`;
+    if(vd!==null&&vd<=-UMBRAL_ALERTA)alertas.push(`<b>${mesCorto(curso)}</b> (en curso) viene ${fPct(vd)} en promedio diario respecto a ${mesCorto(cerrados[cerrados.length-1])}.`);
+  }
+
+  // Clientes
+  if(cli.length&&cerrados.length>1){
+    const ult=mesCorto(cerrados[cerrados.length-1]);
+    const cnt=e=>cli.filter(c=>c.estado===e);
+    const hab=cli.filter(c=>c.habitual), ev=cli.filter(c=>!c.habitual);
+    const rango=`${mesCorto(cerrados[0]).toLowerCase()} a ${mesCorto(cerrados[cerrados.length-2]).toLowerCase()}`;
+    const baja=cnt('En baja').sort((a,b)=>a.dif-b.dif), sin=cnt('Sin consumo').sort((a,b)=>a.dif-b.dif), alza=cnt('En alza').sort((a,b)=>b.dif-a.dif);
+    h+=`<h5>Comportamiento de clientes habituales</h5><p>Se consideran habituales los clientes externos que consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}: son <b>${hab.length}</b>. Comparando ${ult} con el promedio mensual de cada uno en ese período: ${baja.length} en baja, ${alza.length} en alza, ${cnt('Estable').length} estables y ${sin.length} sin consumo.`;
+    const totExt=cli.reduce((s,c)=>s+c.platos,0);
+    const top=hab.slice(0,5);
+    if(top.length)h+=` Los principales clientes del año son ${lista(top.map(c=>`<b>${esc(c.nombre)}</b> (${fmt(totExt?c.platos/totExt*100:0,1)}% de los platos externos, promedio ${fmt(c.base,0)} por mes, en ${ult} ${fmt(c.ult)}: ${c.estado.toLowerCase()})`))}.`;
+    if(baja.length)h+=` Las mayores caídas: ${lista(baja.slice(0,3).map(c=>`${esc(c.nombre)} (promedio ${fmt(c.base,0)}, en ${ult} ${fmt(c.ult)} platos, ${fPct(c.variacion,0)})`))}.`;
+    if(sin.length)h+=` No consumieron en ${ult}: ${lista(sin.slice(0,5).map(c=>`${esc(c.nombre)} (promedio ${fmt(c.base,0)} platos por mes)`))}${sin.length>5?` y ${sin.length-5} más`:''}.`;
+    if(alza.length)h+=` Los que más crecieron: ${lista(alza.slice(0,3).map(c=>`${esc(c.nombre)} (${fPct(c.variacion,0)})`))}.`;
+    if(ev.length){const pEv=ev.reduce((s,c)=>s+c.platos,0), pEvU=ev.reduce((s,c)=>s+c.ult,0);
+      h+=` Además hubo <b>${ev.length} clientes eventuales</b>, que no se comparan contra un promedio: sumaron ${fmt(pEv)} platos en el año${pEvU?` (${fmt(pEvU)} en ${ult})`:''}.`;}
+    h+=`</p>`;
+    const perdidos=[...baja,...sin].reduce((s,c)=>s+c.dif,0);
+    if(baja.length+sin.length)alertas.push(`${baja.length+sin.length} ${baja.length+sin.length===1?'cliente':'clientes'} en baja o sin consumo en ${ult}, que representan unos <b>${fmt(Math.abs(perdidos))} platos menos</b> respecto a su promedio.`);
+  }
+
+  h+=alertas.length
+    ?`<div class="alertas"><b>⚠ Alertas (caídas de ${UMBRAL_ALERTA}% o más)</b><ul>${alertas.map(a=>`<li>${a}</li>`).join('')}</ul></div>`
+    :`<div class="alertas ok"><b>✓ Sin alertas:</b> ningún mes cayó ${UMBRAL_ALERTA}% o más respecto al anterior.</div>`;
+
+  return`<div class="section-block sec-informe">
+    <div class="section-title"><span class="lbl"><span class="tri">▶</span>INFORME EJECUTIVO</span><button class="copy-btn" onclick="copiarInforme(this)">COPIAR INFORME</button></div>
+    <div class="informe-body" id="informe-body">${h}</div></div>`;
+}
+
+// Tabla: explicación de la variación de cada mes
+function renderVariaciones(A){
+  const {cerrados,curso}=A;
+  if(cerrados.length<2)return'';
+  const vars=[];
+  for(let i=1;i<cerrados.length;i++)vars.push(explicarMes(A,cerrados[i],cerrados[i-1]));
+  const cliCell=arr=>arr.length?arr.slice(0,2).map(c=>`${esc(c.nombre)} <span class="${c.d>0?'up':'down'}">${sgn(c.d)}</span>`).join('<br>'):'<span class="zero">—</span>';
+  let h=`<div class="section-block sec-var">
+    <div class="section-title"><span class="tri">▶</span>QUÉ EXPLICA CADA VARIACIÓN — PLATOS, MES CONTRA MES ANTERIOR</div>
+    <div class="cli-note"><b>Efecto días</b>: platos ganados o perdidos por trabajar más o menos días. <b>Efecto ritmo</b>: platos ganados o perdidos porque se vendió más o menos por día. Los dos suman la variación total.</div>
+    <div class="tbl-wrap"><table class="tbl-var"><thead><tr>
+      <th>MES</th><th>PLATOS</th><th>VARIACIÓN</th><th>VAR. %</th><th>EFECTO DÍAS</th><th>EFECTO RITMO</th><th>EXTERNOS</th><th>PETROSAR</th><th>CLIENTES QUE SUMARON</th><th>CLIENTES QUE RESTARON</th><th>SEMANA MÁS FLOJA</th>
+    </tr></thead><tbody>`;
+  h+=`<tr><td>${mesCorto(cerrados[0])}</td>${fmtCell(A.byM[cerrados[0]].gen.platos)}<td class="zero" colspan="9">mes base</td></tr>`;
+  vars.forEach(e=>{
+    h+=`<tr><td>${mesCorto(e.k)}</td>${fmtCell(e.G1.platos)}<td>${sSgn(e.dP)}</td><td>${sPct(e.vP)}</td>
+      <td>${sSgn(e.efDias)}<br><span class="sub">${e.G0.nd} → ${e.G1.nd} días</span></td>
+      <td>${sSgn(e.efRitmo)}<br><span class="sub">${fmt(e.G0.prom,1)} → ${fmt(e.G1.prom,1)} /día</span></td>
+      <td>${sSgn(e.dExt)}</td><td>${sSgn(e.dInt)}</td>
+      <td class="txt">${cliCell(e.suman)}</td><td class="txt">${cliCell(e.restan)}</td>
+      <td class="txt">${e.floja?`Sem. del ${fSem(e.floja)}<br><span class="sub">${fmt(e.floja.prom,1)} /día</span>`:'—'}</td></tr>`;
+  });
+  if(curso){
+    const C_=A.byM[curso].gen, U=A.byM[cerrados[cerrados.length-1]].gen;
+    h+=`<tr><td class="curso">${mesCorto(curso)} (en curso)</td><td class="curso">${fmt(C_.platos)}</td><td class="curso" colspan="3">${C_.nd} días cargados</td><td>${sPct(pct(C_.prom,U.prom))}<br><span class="sub">${fmt(U.prom,1)} → ${fmt(C_.prom,1)} /día</span></td><td colspan="5" class="zero">se completa al cerrar el mes</td></tr>`;
+  }
+  h+=`</tbody></table></div></div>`;
+  return h;
+}
+
+function copiarInforme(btn){
+  const txt=document.getElementById('informe-body').innerText;
+  const ok=()=>{btn.textContent='✓ COPIADO';setTimeout(()=>btn.textContent='COPIAR INFORME',1800);};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(ok).catch(()=>fallback());}
+  else fallback();
+  function fallback(){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){}ta.remove();}
+}
+
+const BADGE={'En baja':'b-baja','Sin consumo':'b-sin','En alza':'b-alza','Estable':'b-estable','Nuevo':'b-nuevo','Reactivado':'b-react','Inactivo':'b-inact','Eventual':'b-inact'};
+
+function renderClientes(A,cli){
+  const {cerrados,curso}=A;
+  if(!cli.length)return'';
+  const keys=allMonths.map(m=>m.key);
+  const ult=cerrados.length?mesCorto(cerrados[cerrados.length-1]):'—';
+  const totP=cli.reduce((s,c)=>s+c.platos,0);
+  const estados=['En baja','Sin consumo','En alza','Estable','Eventual'].filter(e=>cli.some(c=>c.estado===e));
+  const rango=cerrados.length>1?`${mesCorto(cerrados[0]).toLowerCase()} a ${mesCorto(cerrados[cerrados.length-2]).toLowerCase()}`:'—';
+  const rangoCorto=cerrados.length>1?`${mesCorto(cerrados[0]).slice(0,3)}–${mesCorto(cerrados[cerrados.length-2]).slice(0,3)}`.toUpperCase():'—';
+  let h=`<div class="section-block sec-clientes">
+    <div class="section-title"><span class="tri">▶</span>COMPORTAMIENTO DE CLIENTES EXTERNOS — PLATOS POR MES</div>
+    <div class="cli-note"><b>Habituales</b>: consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}; se comparan en <b>${ult}</b> contra su promedio mensual de ese período (baja/alza = variación de ${UMBRAL_ALERTA}% o más). <b>Eventuales</b>: compras ocasionales, se muestran sin promedio ni marca.${curso?` ${mesCorto(curso)} está en curso y se muestra en gris.`:''}</div>
+    <div class="chips"><span class="chip active" onclick="filtrarCli(null,this)">TODOS (${cli.length})</span>${estados.map(e=>`<span class="chip" onclick="filtrarCli('${e}',this)">${e.toUpperCase()} (${cli.filter(c=>c.estado===e).length})</span>`).join('')}</div>
+    <div class="tbl-wrap"><table id="tbl-cli"><thead><tr>
+      <th>CLIENTE</th>${keys.map(k=>`<th>${mesCorto(k).toUpperCase().slice(0,3)}</th>`).join('')}
+      <th>TOTAL</th><th>PART.</th><th>NETO $</th><th>MESES CON CONS.</th><th>PROM. ${rangoCorto}</th><th>${ult.toUpperCase()}</th><th>VAR.</th><th>ESTADO</th>
+    </tr></thead><tbody>`;
+  let sepEv=false;
+  cli.forEach(c=>{
+    if(!c.habitual&&!sepEv){sepEv=true;h+=`<tr class="separator" data-estado="Eventual"><td colspan="${keys.length+10}" style="text-align:left;font-weight:600;color:#888;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em">CLIENTES EVENTUALES</td></tr>`;}
+    h+=`<tr data-estado="${c.estado}"><td>${esc(c.nombre)}</td>`;
+    keys.forEach(k=>{
+      const v=c.porMes[k]||0;
+      if(k===curso)h+=`<td class="curso">${v?fmt(v):'—'}</td>`;
+      else h+=v?fmtCell(v):`<td class="zero">—</td>`;
+    });
+    h+=fmtCell(c.platos)+`<td>${fmt(totP?c.platos/totP*100:0,1)}%</td>`+fmtCell(c.neto,0,'$')
+      +`<td>${c.mesesCon}/${c.nPrev}</td><td>${c.base?fmt(c.base,1):'—'}</td>`+fmtCell(c.ult)
+      +`<td>${c.variacion===null||!c.habitual?'—':sPct(c.variacion)}</td><td><span class="badge ${BADGE[c.estado]}">${c.estado}</span></td></tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+  return h;
+}
+
+function filtrarCli(estado,el){
+  document.querySelectorAll('.sec-clientes .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#tbl-cli tbody tr').forEach(tr=>{
+    tr.style.display=!estado||tr.dataset.estado===estado?'':'none';
+  });
+}
+
 function getVisMonths(){
   if(visMonths===null)return allMonths;
   return allMonths.filter(m=>m.key===visMonths);
@@ -340,6 +684,12 @@ function render(){
 
   let html='';
 
+  // Informe ejecutivo + clientes: calculados sobre todo el año
+  const A=aggAll();
+  const cli=analizarClientes(A);
+  html+=renderInforme(A,cli);
+  html+=renderVariaciones(A);
+
   // ── NUEVO: si hay un solo mes seleccionado, el detalle diario va primero ──
   if(vis.length===1){
     const days=calcDaily(rowsVis);
@@ -354,6 +704,8 @@ function render(){
     <div class="chart-card"><h4>Evolución mensual — Platos vendidos (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-cant"></canvas></div></div>
     <div class="chart-card"><h4>Evolución mensual — Total neto $ (Cl. Externos)</h4><div class="chart-wrap"><canvas id="chart-neto"></canvas></div></div>
   </div>`;
+
+  html+=renderClientes(A,cli);
 
   document.getElementById('app').innerHTML=html;
 
