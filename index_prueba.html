@@ -347,7 +347,7 @@ function aggAll(){
     if(!byM[k].porDia)byM[k].porDia={};
     byM[k].porDia[dk]=(byM[k].porDia[dk]||0)+cant;
     if(sec==='ext'){
-      const nom=(r[C.cliente]||'').toString().trim().replace(/\s+/g,' ').toUpperCase()||'SIN NOMBRE';
+      const nom=(r[C.cliente]||'').toString().trim().replace(/^[\d\s:.\-]+(?=[A-Za-zÁÉÍÓÚÑáéíóúñ])/,'').replace(/\s+/g,' ').toUpperCase()||'SIN NOMBRE'; // sin el código de cliente
       if(!clientes[nom])clientes[nom]={nombre:nom,porMes:{},platos:0,neto:0};
       const c=clientes[nom];
       c.porMes[k]=(c.porMes[k]||0)+cant; c.platos+=cant; c.neto+=neto;
@@ -515,6 +515,9 @@ function renderInforme(A,cli){
     const rango=`${mesCorto(cerrados[0]).toLowerCase()} a ${mesCorto(cerrados[cerrados.length-2]).toLowerCase()}`;
     const baja=cnt('En baja').sort((a,b)=>a.dif-b.dif), sin=cnt('Sin consumo').sort((a,b)=>a.dif-b.dif), alza=cnt('En alza').sort((a,b)=>b.dif-a.dif);
     h+=`<h5>Comportamiento de clientes habituales</h5><p>Se consideran habituales los clientes externos que consumieron en al menos el ${PCT_HABITUAL}% de los meses de ${rango}: son <b>${hab.length}</b>. Comparando ${ult} con el promedio mensual de cada uno en ese período: ${baja.length} en baja, ${alza.length} en alza, ${cnt('Estable').length} estables y ${sin.length} sin consumo.`;
+    const totExt=cli.reduce((s,c)=>s+c.platos,0);
+    const top=hab.slice(0,5);
+    if(top.length)h+=` Los principales clientes del año son ${lista(top.map(c=>`<b>${esc(c.nombre)}</b> (${fmt(totExt?c.platos/totExt*100:0,1)}% de los platos externos, promedio ${fmt(c.base,0)} por mes, en ${ult} ${fmt(c.ult)}: ${c.estado.toLowerCase()})`))}.`;
     if(baja.length)h+=` Las mayores caídas: ${lista(baja.slice(0,3).map(c=>`${esc(c.nombre)} (promedio ${fmt(c.base,0)}, en ${ult} ${fmt(c.ult)} platos, ${fPct(c.variacion,0)})`))}.`;
     if(sin.length)h+=` No consumieron en ${ult}: ${lista(sin.slice(0,5).map(c=>`${esc(c.nombre)} (promedio ${fmt(c.base,0)} platos por mes)`))}${sin.length>5?` y ${sin.length-5} más`:''}.`;
     if(alza.length)h+=` Los que más crecieron: ${lista(alza.slice(0,3).map(c=>`${esc(c.nombre)} (${fPct(c.variacion,0)})`))}.`;
