@@ -460,6 +460,53 @@ function patronSemanal(A){
   return Object.entries(s).filter(([,v])=>v.n>=3).map(([w,v])=>({dia:DIAS_SEM[w],prom:v.p/v.n,n:v.n})).sort((a,b)=>b.prom-a.prom);
 }
 
+// Ritmo diario de clientes externos: último mes vs año y tendencia desde el pico
+function textoTendencia(A){
+  const {byM,cerrados,curso}=A;
+  if(cerrados.length<3)return'';
+  const E=k=>byM[k].ext;
+  const u=cerrados[cerrados.length-1], p=cerrados[cerrados.length-2], prev=cerrados.slice(0,-1);
+  const U=E(u), P=E(p);
+  const platosPrev=prev.reduce((s,k)=>s+E(k).platos,0), diasPrev=prev.reduce((s,k)=>s+E(k).nd,0);
+  const ritmoAnio=diasPrev?platosPrev/diasPrev:0;
+  const esperado=ritmoAnio*U.nd, dif=U.platos-esperado;
+  const rango=`${mesCorto(prev[0]).toLowerCase()} a ${mesCorto(prev[prev.length-1]).toLowerCase()}`;
+  const subeTotal=U.platos>=P.platos, subeRitmo=U.prom>=P.prom;
+  let t=`<h5>Ritmo diario y tendencia (clientes externos)</h5><p>`;
+  // 1. contra el mes anterior
+  t+=`En ${mesCorto(u)} los clientes externos sumaron ${fmt(U.platos)} platos contra ${fmt(P.platos)} de ${mesCorto(p)} (${sSgn(U.platos-P.platos)}). `;
+  if(U.nd!==P.nd)t+=`Se trabajaron ${U.nd} días contra ${P.nd}, y el ritmo pasó de ${fmt(P.prom,1)} a ${fmt(U.prom,1)} platos por día`;
+  else t+=`Con los mismos ${U.nd} días trabajados, el ritmo pasó de ${fmt(P.prom,1)} a ${fmt(U.prom,1)} platos por día`;
+  const efD=(U.nd-P.nd)*P.prom, efR=U.nd*(U.prom-P.prom);
+  t+=Math.abs(efD)>Math.abs(efR)?`, así que la diferencia se explica sobre todo por la <b>cantidad de días trabajados</b>. `:`, así que la diferencia se explica sobre todo por el <b>ritmo de venta diario</b>. `;
+  // 2. contra el ritmo del año
+  t+=`Frente al año: de ${rango} se vendieron en promedio <b>${fmt(ritmoAnio,1)} platos por día</b>; a ese ritmo, con ${U.nd} días, se esperaban unos ${fmt(esperado)} platos en ${mesCorto(u)} y se vendieron ${fmt(U.platos)} (${sSgn(dif)}).`;
+  t+=`</p>`;
+  // 3. tendencia desde el pico
+  const pico=cerrados.reduce((a,b)=>E(b).prom>E(a).prom?b:a);
+  const desde=cerrados.filter(k=>k>=pico).concat(curso&&E(curso)&&E(curso).nd?[curso]:[]);
+  if(desde.length>=3){
+    const serie=desde.map(k=>`${mesCorto(k)} ${fmt(E(k).prom,1)}${k===curso?' (en curso)':''}`).join(' → ');
+    const ultimo=desde[desde.length-1];
+    const bajoPico=pct(E(ultimo).prom,E(pico).prom);
+    let bajas=0;for(let i=1;i<desde.length;i++)if(E(desde[i]).prom<E(desde[i-1]).prom)bajas++;
+    t+=`<p>Evolución del ritmo diario desde el mes pico (platos por día): ${serie}. `;
+    if(bajoPico<=-UMBRAL_ALERTA){
+      t+=`El ritmo actual está ${fmt(Math.abs(bajoPico),0)}% por debajo del pico de ${mesCorto(pico)}`;
+      t+=bajas>=Math.ceil((desde.length-1)/2)?` y bajó en ${bajas} de los ${desde.length-1} meses siguientes: es una <b>baja sostenida</b>, no un mes puntual.`:`.`;
+    }else t+=`El ritmo se mantiene cerca del pico de ${mesCorto(pico)} (${fPct(bajoPico,0)}).`;
+    t+=`</p>`;
+  }
+  // 4. conclusión
+  let c='';
+  if(subeTotal&&dif<0)c=`${mesCorto(u)} se vio mejor que ${mesCorto(p)}${!subeRitmo||Math.abs(efD)>Math.abs(efR)?' principalmente por los días trabajados':''}, pero <b>no recuperó el nivel del año</b>.`;
+  else if(!subeTotal&&dif<0)c=`${mesCorto(u)} quedó por debajo de ${mesCorto(p)} y también del ritmo habitual del año.`;
+  else if(!subeTotal&&dif>=0)c=`${mesCorto(u)} quedó por debajo de ${mesCorto(p)}, pero sigue en línea o por encima del ritmo habitual del año.`;
+  else c=`${mesCorto(u)} mejoró respecto a ${mesCorto(p)} y está en línea o por encima del ritmo habitual del año.`;
+  if(curso&&E(curso)&&E(curso).nd){const vc=pct(E(curso).prom,ritmoAnio);c+=` ${mesCorto(curso)} (en curso) viene a ${fmt(E(curso).prom,1)} platos por día, ${sPct(vc)} frente al ritmo del año.`;}
+  return t+`<p><b>Conclusión:</b> ${c}</p>`;
+}
+
 function renderInforme(A,cli){
   const {byM,cerrados,curso}=A;
   const keys=allMonths.map(m=>m.key);
@@ -498,6 +545,7 @@ function renderInforme(A,cli){
     // Último mes cerrado, explicado
     if(vars.length){
       h+=`<h5>Qué pasó en el último mes cerrado</h5><p>${textoMes(vars[vars.length-1])}</p>`;
+      h+=textoTendencia(A);
     }
     // Alertas de caída mes a mes (solo volumen)
     vars.forEach(e=>{
@@ -531,7 +579,11 @@ function renderInforme(A,cli){
       h+=` Además hubo <b>${ev.length} clientes eventuales</b>, que no se comparan contra un promedio: sumaron ${fmt(pEv)} platos en el año${pEvU?` (${fmt(pEvU)} en ${ult})`:''}.`;}
     h+=`</p>`;
     const perdidos=[...baja,...sin].reduce((s,c)=>s+c.dif,0);
-    if(baja.length+sin.length)alertas.push(`${baja.length+sin.length} ${baja.length+sin.length===1?'cliente':'clientes'} en baja o sin consumo en ${ult}, que representan unos <b>${fmt(Math.abs(perdidos))} platos menos</b> que lo esperado según su ritmo habitual.`);
+    if(baja.length+sin.length){
+      const kAnt=cerrados[cerrados.length-2];
+      const vsAnt=[...baja,...sin].reduce((s,c)=>s+c.ult-(c.porMes[kAnt]||0),0);
+      alertas.push(`${baja.length+sin.length} ${baja.length+sin.length===1?'cliente habitual':'clientes habituales'} en baja o sin consumo en ${ult}: entre ${baja.length+sin.length===1?'él':'ellos'} consumieron <b>${fmt(Math.abs(perdidos))} platos menos</b> de lo esperado frente a su ritmo de ${rango} (con los días trabajados de ${ult}). Contra ${mesCorto(kAnt)} la diferencia de esos mismos clientes es de ${sgn(vsAnt)} platos.`);
+    }
   }
 
   h+=alertas.length
