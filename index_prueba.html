@@ -90,6 +90,10 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .b-react{background:#e8daef;color:#4a235a}
 .b-inact{background:#f2f2f2;color:#999}
 td.curso{font-style:italic;color:#999}
+.sec-var .section-title{background:#5c4a1a;color:#fff}
+.tbl-var td{vertical-align:top;line-height:1.5}
+.tbl-var td.txt{text-align:left;font-family:'IBM Plex Sans',sans-serif;font-size:11px;white-space:normal;min-width:170px}
+.tbl-var .sub{font-size:10px;color:var(--muted)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
@@ -340,6 +344,8 @@ function aggAll(){
     if(!byM[k])byM[k]={gen:nb(),ext:nb(),int:nb()};
     const sec=getSeccion(r)==='interna'?'int':'ext';
     [byM[k].gen,byM[k][sec]].forEach(b=>{b.platos+=cant;b.neto+=neto;b.dias.add(dk);});
+    if(!byM[k].porDia)byM[k].porDia={};
+    byM[k].porDia[dk]=(byM[k].porDia[dk]||0)+cant;
     if(sec==='ext'){
       const nom=(r[C.cliente]||'').toString().trim().replace(/\s+/g,' ').toUpperCase()||'SIN NOMBRE';
       if(!clientes[nom])clientes[nom]={nombre:nom,porMes:{},platos:0,neto:0};
@@ -384,6 +390,74 @@ function analizarClientes(A){
   return res.sort((a,b)=>b.platos-a.platos);
 }
 
+// ── Análisis de variaciones: qué explica cada cambio mes a mes ──────────
+const DIAS_SEM=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MIN_CLI=5; // platos mínimos de diferencia para mencionar a un cliente
+
+function semanas(porDia){
+  // agrupa los días del mes por semana (lunes a domingo)
+  const s={};
+  Object.entries(porDia).forEach(([dk,p])=>{
+    const d=new Date(dk+'T12:00:00');
+    const lun=new Date(d); lun.setDate(d.getDate()-((d.getDay()+6)%7));
+    const key=lun.toISOString().slice(0,10);
+    if(!s[key])s[key]={inicio:d,platos:0,dias:0};
+    if(d<s[key].inicio)s[key].inicio=d;
+    s[key].platos+=p; s[key].dias++;
+  });
+  return Object.values(s).map(w=>({...w,prom:w.platos/w.dias})).sort((a,b)=>a.inicio-b.inicio);
+}
+function fSem(w){return`${w.inicio.getDate()}/${w.inicio.getMonth()+1}`;}
+function sgn(v,dec=0){return(v>0?'+':v<0?'−':'')+fmt(Math.abs(v),dec);}
+function sSgn(v,dec=0){return`<span class="${v>0?'up':v<0?'down':''}">${sgn(v,dec)}</span>`;}
+
+function explicarMes(A,k,kPrev){
+  const G1=A.byM[k].gen, G0=A.byM[kPrev].gen;
+  const dP=G1.platos-G0.platos;
+  const efDias=(G1.nd-G0.nd)*G0.prom;          // por trabajar más/menos días
+  const efRitmo=G1.nd*(G1.prom-G0.prom);        // por vender más/menos por día
+  const dExt=A.byM[k].ext.platos-A.byM[kPrev].ext.platos;
+  const dInt=A.byM[k].int.platos-A.byM[kPrev].int.platos;
+  const cd=Object.values(A.clientes).map(c=>({nombre:c.nombre,d:(c.porMes[k]||0)-(c.porMes[kPrev]||0)}));
+  const suman=cd.filter(c=>c.d>=MIN_CLI).sort((a,b)=>b.d-a.d);
+  const restan=cd.filter(c=>c.d<=-MIN_CLI).sort((a,b)=>a.d-b.d);
+  const sems=semanas(A.byM[k].porDia||{}).filter(w=>w.dias>=2);
+  const floja=sems.length?sems.reduce((a,b)=>b.prom<a.prom?b:a):null;
+  const fuerte=sems.length?sems.reduce((a,b)=>b.prom>a.prom?b:a):null;
+  const causa=Math.abs(efDias)>Math.abs(efRitmo)?'dias':'ritmo';
+  return{k,kPrev,G1,G0,dP,vP:pct(G1.platos,G0.platos),efDias,efRitmo,dExt,dInt,suman,restan,floja,fuerte,causa};
+}
+
+function textoMes(e,conSemana=true){
+  const M=mesCorto(e.k), P=mesCorto(e.kPrev);
+  const sube=e.dP>=0;
+  let t=`<b>${M}</b> cerró con ${fmt(e.G1.platos)} platos, ${sSgn(e.dP)} (${sPct(e.vP)}) respecto a ${P}. `;
+  const partes=[];
+  if(Math.round(e.efDias)!==0)partes.push(`${sgn(e.efDias)} por haber trabajado ${e.G1.nd} días contra ${e.G0.nd}`);
+  if(Math.round(e.efRitmo)!==0)partes.push(`${sgn(e.efRitmo)} porque el promedio diario ${e.G1.prom>=e.G0.prom?'subió':'bajó'} de ${fmt(e.G0.prom,1)} a ${fmt(e.G1.prom,1)} platos`);
+  if(partes.length)t+=`La diferencia se explica ${partes.length>1?'así: ':''}${lista(partes)}; `+
+    (e.causa==='dias'?`el factor principal fue la <b>cantidad de días trabajados</b>.`:`el factor principal fue el <b>ritmo de venta diario</b>.`)+' ';
+  t+=`Por sección: clientes externos ${sgn(e.dExt)} y Petrosar ${sgn(e.dInt)}. `;
+  const cs=e.suman.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
+  const cr=e.restan.slice(0,3).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`);
+  if(sube){ if(cs.length)t+=`Los clientes que más sumaron: ${lista(cs)}. `; if(cr.length)t+=`En contra: ${lista(cr)}. `; }
+  else    { if(cr.length)t+=`Los clientes que más restaron: ${lista(cr)}. `; if(cs.length)t+=`A favor: ${lista(cs)}. `; }
+  if(conSemana){
+    if(!sube&&e.floja)t+=`La baja se notó más en la semana del ${fSem(e.floja)}, con ${fmt(e.floja.prom,1)} platos por día.`;
+    else if(sube&&e.fuerte)t+=`La semana más fuerte fue la del ${fSem(e.fuerte)}, con ${fmt(e.fuerte.prom,1)} platos por día.`;
+  }
+  return t;
+}
+
+function patronSemanal(A){
+  const s={};
+  Object.keys(A.byM).filter(k=>+k!==A.curso).forEach(k=>Object.entries(A.byM[k].porDia||{}).forEach(([dk,p])=>{
+    const w=new Date(dk+'T12:00:00').getDay();
+    if(!s[w])s[w]={p:0,n:0}; s[w].p+=p; s[w].n++;
+  }));
+  return Object.entries(s).filter(([,v])=>v.n>=3).map(([w,v])=>({dia:DIAS_SEM[w],prom:v.p/v.n,n:v.n})).sort((a,b)=>b.prom-a.prom);
+}
+
 function renderInforme(A,cli){
   const {byM,cerrados,curso}=A;
   const keys=allMonths.map(m=>m.key);
@@ -393,42 +467,47 @@ function renderInforme(A,cli){
   let h=`<h5>Resumen del período</h5><p>En lo que va de ${anio} (${mesCorto(keys[0]).toLowerCase()} a ${mesCorto(keys[keys.length-1]).toLowerCase()}${curso?', este último en curso':''}) se vendieron <b>${fmt(tot.p)} platos</b> por un neto de <b>${f$(tot.n)}</b>, en ${fmt(tot.d)} días trabajados (promedio de ${fmt(tot.d?tot.p/tot.d:0,1)} platos por día). De ese total, ${fmt(tot.pe)} platos (${fmt(tot.p?tot.pe/tot.p*100:0,1)}%) corresponden a clientes externos y ${fmt(tot.pi)} (${fmt(tot.p?tot.pi/tot.p*100:0,1)}%) a consumo interno de Petrosar.</p>`;
 
   const alertas=[];
+  const g=k=>byM[k].gen;
+  const vars=[];
+  for(let i=1;i<cerrados.length;i++)vars.push(explicarMes(A,cerrados[i],cerrados[i-1]));
+
   if(cerrados.length){
-    // Mejor y peor mes (solo meses cerrados)
-    const g=k=>byM[k].gen;
+    // Comportamiento general del año
     const porPlatos=[...cerrados].sort((a,b)=>g(b).platos-g(a).platos);
-    const porNeto=[...cerrados].sort((a,b)=>g(b).neto-g(a).neto);
+    const porRitmo=[...cerrados].sort((a,b)=>g(b).prom-g(a).prom);
     const mej=porPlatos[0], peo=porPlatos[porPlatos.length-1];
-    h+=`<h5>Mejor y peor mes</h5><p>`;
+    h+=`<h5>Comportamiento del año</h5><p>`;
     if(cerrados.length>1){
-      h+=`El mejor mes en volumen fue <b>${mesCorto(mej)}</b>, con ${fmt(g(mej).platos)} platos (${fmt(g(mej).prom,1)} por día) y un neto de ${f$(g(mej).neto)}. El más bajo fue <b>${mesCorto(peo)}</b>, con ${fmt(g(peo).platos)} platos (${fmt(g(peo).prom,1)} por día) y ${f$(g(peo).neto)}.`;
-      if(porNeto[0]!==mej)h+=` En facturación, el mejor mes fue <b>${mesCorto(porNeto[0])}</b> (${f$(g(porNeto[0]).neto)}), por efecto de los precios.`;
+      h+=`El mes con más platos fue <b>${mesCorto(mej)}</b> (${fmt(g(mej).platos)} platos en ${g(mej).nd} días, ${fmt(g(mej).prom,1)} por día) y el de menos fue <b>${mesCorto(peo)}</b> (${fmt(g(peo).platos)} platos en ${g(peo).nd} días, ${fmt(g(peo).prom,1)} por día).`;
+      if(porRitmo[0]!==mej)h+=` Si se mira el ritmo diario, que no depende de cuántos días se trabajó, el mejor mes fue <b>${mesCorto(porRitmo[0])}</b> con ${fmt(g(porRitmo[0]).prom,1)} platos por día.`;
+      const sube=[...vars].sort((a,b)=>b.dP-a.dP)[0], baja=[...vars].sort((a,b)=>a.dP-b.dP)[0];
+      const porque=e=>e.causa==='dias'?`principalmente por la cantidad de días trabajados (${e.G0.nd} → ${e.G1.nd})`:`principalmente por el ritmo diario (${fmt(e.G0.prom,1)} → ${fmt(e.G1.prom,1)} platos por día)`;
+      const cliTxt=(arr)=>arr.length?`, con ${lista(arr.slice(0,2).map(c=>`${esc(c.nombre)} (${sgn(c.d)})`))} como principal${arr.length>1?'es':''} responsable${arr.length>1?'s':''}`:'';
+      if(sube&&sube.dP>0)h+=` La mayor suba fue en <b>${mesCorto(sube.k)}</b>: ${sSgn(sube.dP)} platos respecto a ${mesCorto(sube.kPrev)}, ${porque(sube)}${cliTxt(sube.suman)}.`;
+      if(baja&&baja.dP<0)h+=` La caída más marcada fue en <b>${mesCorto(baja.k)}</b>: ${sSgn(baja.dP)} platos respecto a ${mesCorto(baja.kPrev)}, ${porque(baja)}${cliTxt(baja.restan)}${baja.floja?`; la semana más floja fue la del ${fSem(baja.floja)} (${fmt(baja.floja.prom,1)} por día)`:''}.`;
     }else h+=`Hay un solo mes cerrado (${mesCorto(mej)}), todavía no hay comparación posible.`;
+    const pat=patronSemanal(A);
+    if(pat.length>=2){
+      const top=pat[0], low=pat[pat.length-1];
+      h+=` Por día de la semana, el más fuerte es el <b>${top.dia}</b> (${fmt(top.prom,1)} platos en promedio) y el más flojo el <b>${low.dia}</b> (${fmt(low.prom,1)}).`;
+    }
     h+=`</p>`;
 
-    // Variación principal: último cerrado vs anterior
-    if(cerrados.length>1){
-      const u=cerrados[cerrados.length-1], p=cerrados[cerrados.length-2];
-      const U=g(u),P=g(p);
-      const vp=pct(U.platos,P.platos), vn=pct(U.neto,P.neto), vd=pct(U.prom,P.prom), vpr=pct(U.precio,P.precio);
-      h+=`<h5>Variación del último mes cerrado</h5><p>En <b>${mesCorto(u)}</b> se vendieron ${fmt(U.platos)} platos, ${sPct(vp)} respecto a ${mesCorto(p)} (${U.platos-P.platos>=0?'+':'−'}${fmt(Math.abs(U.platos-P.platos))} platos), con ${U.nd} días trabajados contra ${P.nd}. El promedio diario pasó de ${fmt(P.prom,1)} a ${fmt(U.prom,1)} platos (${sPct(vd)}). El neto fue de ${f$(U.neto)} (${sPct(vn)}) y el precio promedio por plato pasó de ${f$(P.precio,2)} a ${f$(U.precio,2)} (${sPct(vpr)}).</p>`;
+    // Último mes cerrado, explicado
+    if(vars.length){
+      h+=`<h5>Qué pasó en el último mes cerrado</h5><p>${textoMes(vars[vars.length-1])}</p>`;
     }
-    // Alertas de caída mes a mes
-    for(let i=1;i<cerrados.length;i++){
-      const a=g(cerrados[i]),b=g(cerrados[i-1]);
-      const vp=pct(a.platos,b.platos), vn=pct(a.neto,b.neto);
-      const partes=[];
-      if(vp!==null&&vp<=-UMBRAL_ALERTA)partes.push(`platos ${fPct(vp)}`);
-      if(vn!==null&&vn<=-UMBRAL_ALERTA)partes.push(`neto ${fPct(vn)}`);
-      if(partes.length)alertas.push(`<b>${mesCorto(cerrados[i])}</b> cayó respecto a ${mesCorto(cerrados[i-1])}: ${partes.join(', ')}.`);
-    }
+    // Alertas de caída mes a mes (solo volumen)
+    vars.forEach(e=>{
+      if(e.vP!==null&&e.vP<=-UMBRAL_ALERTA)alertas.push(`<b>${mesCorto(e.k)}</b> cayó ${fPct(e.vP)} en platos respecto a ${mesCorto(e.kPrev)} (${e.causa==='dias'?'por menos días trabajados':'por menor ritmo diario'}).`);
+    });
   }
 
   // Mes en curso
   if(curso&&cerrados.length){
     const C_=byM[curso].gen, U=byM[cerrados[cerrados.length-1]].gen;
     const vd=pct(C_.prom,U.prom);
-    h+=`<h5>Mes en curso</h5><p><b>${mesCorto(curso)}</b> lleva ${C_.nd} días cargados con ${fmt(C_.platos)} platos y ${f$(C_.neto)} de neto. Promedia ${fmt(C_.prom,1)} platos por día, ${sPct(vd)} frente al promedio diario de ${mesCorto(cerrados[cerrados.length-1])}${C_.nd&&U.prom?`; a ese ritmo y con los mismos ${U.nd} días trabajados cerraría en unos ${fmt(C_.prom*U.nd)} platos`:''}.</p>`;
+    h+=`<h5>Mes en curso</h5><p><b>${mesCorto(curso)}</b> lleva ${C_.nd} días cargados con ${fmt(C_.platos)} platos. Promedia ${fmt(C_.prom,1)} platos por día, ${sPct(vd)} frente al promedio diario de ${mesCorto(cerrados[cerrados.length-1])}${C_.nd&&U.prom?`; a ese ritmo y con los mismos ${U.nd} días trabajados cerraría en unos ${fmt(C_.prom*U.nd)} platos`:''}.</p>`;
     if(vd!==null&&vd<=-UMBRAL_ALERTA)alertas.push(`<b>${mesCorto(curso)}</b> (en curso) viene ${fPct(vd)} en promedio diario respecto a ${mesCorto(cerrados[cerrados.length-1])}.`);
   }
 
@@ -455,6 +534,36 @@ function renderInforme(A,cli){
   return`<div class="section-block sec-informe">
     <div class="section-title"><span class="lbl"><span class="tri">▶</span>INFORME EJECUTIVO</span><button class="copy-btn" onclick="copiarInforme(this)">COPIAR INFORME</button></div>
     <div class="informe-body" id="informe-body">${h}</div></div>`;
+}
+
+// Tabla: explicación de la variación de cada mes
+function renderVariaciones(A){
+  const {cerrados,curso}=A;
+  if(cerrados.length<2)return'';
+  const vars=[];
+  for(let i=1;i<cerrados.length;i++)vars.push(explicarMes(A,cerrados[i],cerrados[i-1]));
+  const cliCell=arr=>arr.length?arr.slice(0,2).map(c=>`${esc(c.nombre)} <span class="${c.d>0?'up':'down'}">${sgn(c.d)}</span>`).join('<br>'):'<span class="zero">—</span>';
+  let h=`<div class="section-block sec-var">
+    <div class="section-title"><span class="tri">▶</span>QUÉ EXPLICA CADA VARIACIÓN — PLATOS, MES CONTRA MES ANTERIOR</div>
+    <div class="cli-note"><b>Efecto días</b>: platos ganados o perdidos por trabajar más o menos días. <b>Efecto ritmo</b>: platos ganados o perdidos porque se vendió más o menos por día. Los dos suman la variación total.</div>
+    <div class="tbl-wrap"><table class="tbl-var"><thead><tr>
+      <th>MES</th><th>PLATOS</th><th>VARIACIÓN</th><th>VAR. %</th><th>EFECTO DÍAS</th><th>EFECTO RITMO</th><th>EXTERNOS</th><th>PETROSAR</th><th>CLIENTES QUE SUMARON</th><th>CLIENTES QUE RESTARON</th><th>SEMANA MÁS FLOJA</th>
+    </tr></thead><tbody>`;
+  h+=`<tr><td>${mesCorto(cerrados[0])}</td>${fmtCell(A.byM[cerrados[0]].gen.platos)}<td class="zero" colspan="9">mes base</td></tr>`;
+  vars.forEach(e=>{
+    h+=`<tr><td>${mesCorto(e.k)}</td>${fmtCell(e.G1.platos)}<td>${sSgn(e.dP)}</td><td>${sPct(e.vP)}</td>
+      <td>${sSgn(e.efDias)}<br><span class="sub">${e.G0.nd} → ${e.G1.nd} días</span></td>
+      <td>${sSgn(e.efRitmo)}<br><span class="sub">${fmt(e.G0.prom,1)} → ${fmt(e.G1.prom,1)} /día</span></td>
+      <td>${sSgn(e.dExt)}</td><td>${sSgn(e.dInt)}</td>
+      <td class="txt">${cliCell(e.suman)}</td><td class="txt">${cliCell(e.restan)}</td>
+      <td class="txt">${e.floja?`Sem. del ${fSem(e.floja)}<br><span class="sub">${fmt(e.floja.prom,1)} /día</span>`:'—'}</td></tr>`;
+  });
+  if(curso){
+    const C_=A.byM[curso].gen, U=A.byM[cerrados[cerrados.length-1]].gen;
+    h+=`<tr><td class="curso">${mesCorto(curso)} (en curso)</td><td class="curso">${fmt(C_.platos)}</td><td class="curso" colspan="3">${C_.nd} días cargados</td><td>${sPct(pct(C_.prom,U.prom))}<br><span class="sub">${fmt(U.prom,1)} → ${fmt(C_.prom,1)} /día</span></td><td colspan="5" class="zero">se completa al cerrar el mes</td></tr>`;
+  }
+  h+=`</tbody></table></div></div>`;
+  return h;
 }
 
 function copiarInforme(btn){
@@ -574,6 +683,7 @@ function render(){
   const A=aggAll();
   const cli=analizarClientes(A);
   html+=renderInforme(A,cli);
+  html+=renderVariaciones(A);
 
   // ── NUEVO: si hay un solo mes seleccionado, el detalle diario va primero ──
   if(vis.length===1){
