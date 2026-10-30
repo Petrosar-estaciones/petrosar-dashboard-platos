@@ -317,6 +317,7 @@ function datosInforme(){
     const d=parseDate(r[C.fecha],r[C.periodo]); if(!d)return;
     const k=monthKey(d), dk=d.toISOString().slice(0,10), q=signed(r,C.cantidad), n=signed(r,C.neto);
     if(!M[k])M[k]={platos:0,dias:new Set(),ext:0,diasExt:new Set()};
+    if(getSeccion(r)!=='externa')return;   // el informe usa solo clientes externos (sin Petrosar)
     M[k].platos+=q; M[k].dias.add(dk);
     if(!M[k].porDia)M[k].porDia={};
     M[k].porDia[dk]=(M[k].porDia[dk]||0)+q;
@@ -387,7 +388,7 @@ function renderInforme(){
     </tbody></table></div>`;
 
   return`<div class="section-block sec-informe">
-    <div class="section-title"><span class="tri">▶</span>INFORME</div>
+    <div class="section-title"><span class="tri">▶</span>INFORME — CLIENTES EXTERNOS (SIN PETROSAR)</div>
     <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul></div>
     ${tabla}</div>`;
 }
@@ -464,7 +465,6 @@ function render(){
     html+=renderDailyTable(days);
   }
 
-  html+=renderTable('GENERAL','sec-general',vis,metGen);
   html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
   html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
 
