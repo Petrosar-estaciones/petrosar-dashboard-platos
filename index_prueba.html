@@ -386,42 +386,10 @@ function renderInforme(){
     <tr class="tot-row"><td>TOTAL DE LA TABLA</td>${tot(filas)}</tr>
     </tbody></table></div>`;
 
-  // ── Para planificar stock: día de la semana, día pico y semanas ──
-  const DS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const fd=dk=>{const d=new Date(dk+'T12:00:00');return{d,txt:`${DS[d.getDay()].toLowerCase()} ${d.getDate()}/${d.getMonth()+1}`};};
-  const todos=allMonths.map(m=>m.key).filter(k=>M[k]);
-  const pw={};
-  todos.forEach(k=>Object.entries(M[k].porDia).forEach(([dk,q])=>{const w=fd(dk).d.getDay();if(!pw[w])pw[w]={q:0,n:0};pw[w].q+=q;pw[w].n++;}));
-  const dias=[1,2,3,4,5,6,0].filter(w=>pw[w]&&pw[w].n>=3).map(w=>({w,prom:pw[w].q/pw[w].n,n:pw[w].n}));
-  const mx=Math.max(...dias.map(x=>x.prom)), mn=Math.min(...dias.map(x=>x.prom));
-  const strip=dias.length?`<div class="top-title">Promedio de platos por día de la semana — ${mesC(todos[0]).toLowerCase()} a ${mesC(todos[todos.length-1]).toLowerCase()}</div>
-    <div class="sem-strip">${dias.map(x=>`<div class="sem-dia ${x.prom===mx?'max':x.prom===mn?'min':''}"><div class="d">${DS[x.w]}</div><div class="v">${fmt(x.prom,1)}</div><div class="n">${x.prom===mx?'el más fuerte':x.prom===mn?'el más flojo':`${x.n} días`}</div></div>`).join('')}</div>`:'';
-  const semanas=k=>{const w={};Object.entries(M[k].porDia).forEach(([dk,q])=>{const d=fd(dk).d;const l=new Date(d);l.setDate(d.getDate()-((d.getDay()+6)%7));const key=l.toISOString().slice(0,10);if(!w[key])w[key]={ini:d,q:0,n:0};if(d<w[key].ini)w[key].ini=d;w[key].q+=q;w[key].n++;});
-    return Object.values(w).filter(x=>x.n>=2).map(x=>({...x,prom:x.q/x.n}));};
-  const fs=x=>`semana del ${x.ini.getDate()}/${x.ini.getMonth()+1}`;
-  const filasStock=[...todos].reverse().map(k=>{
-    const pd=Object.entries(M[k].porDia).sort((a,b)=>b[1]-a[1]);
-    const pico=pd[0], bajo=pd[pd.length-1], sem=semanas(k);
-    const fl=sem.length?sem.reduce((a,b)=>b.prom<a.prom?b:a):null, fu=sem.length?sem.reduce((a,b)=>b.prom>a.prom?b:a):null;
-    return`<tr><td>${mesC(k)}${k===curso?' <span class="sub">(en curso)</span>':''}</td>${fmtCell(M[k].prom,1)}
-      <td class="txt">${pico?`${fd(pico[0]).txt} <b>${fmt(pico[1])}</b>`:'—'}</td>
-      <td class="txt">${bajo?`${fd(bajo[0]).txt} <b>${fmt(bajo[1])}</b>`:'—'}</td>
-      <td class="txt">${fu?`${fs(fu)} <b>${fmt(fu.prom,1)}</b> <span class="sub">/día</span>`:'—'}</td>
-      <td class="txt">${fl?`${fs(fl)} <b>${fmt(fl.prom,1)}</b> <span class="sub">/día</span>`:'—'}</td></tr>`;}).join('');
-  const tablaStock=`<div class="top-title">Para planificar stock — día de más y menos ventas y semanas por mes (platos, incluye Petrosar)</div>
-    <div class="tbl-wrap"><table><thead><tr><th>MES</th><th>PROM./DÍA</th><th>DÍA DE MÁS VENTAS</th><th>DÍA DE MENOS VENTAS</th><th>SEMANA MÁS FUERTE</th><th>SEMANA MÁS FLOJA</th></tr></thead><tbody>${filasStock}</tbody></table></div>`;
-  // punto en el informe
-  if(dias.length){
-    const fuerte=dias.find(x=>x.prom===mx), flojo=dias.find(x=>x.prom===mn);
-    const u2=u, pd=Object.entries(M[u2].porDia).sort((a,b)=>b[1]-a[1]), sem=semanas(u2);
-    const fl=sem.length?sem.reduce((a,b)=>b.prom<a.prom?b:a):null;
-    pts.push(`<b>Para el stock:</b> el día más fuerte es el <b>${DS[fuerte.w].toLowerCase()}</b> (${fmt(fuerte.prom,1)} platos en promedio) y el más flojo el <b>${DS[flojo.w].toLowerCase()}</b> (${fmt(flojo.prom,1)}), ${fmt(Math.abs(pct(flojo.prom,fuerte.prom)),0)}% menos. En ${mesC(u2).toLowerCase()}${u2===curso?' (en curso)':''} el día de más ventas fue el ${fd(pd[0][0]).txt} (${fmt(pd[0][1])} platos)${fl?` y la semana más floja, la ${fs(fl)} (${fmt(fl.prom,1)} por día)`:''}.`);
-  }
-
   return`<div class="section-block sec-informe">
     <div class="section-title"><span class="tri">▶</span>INFORME</div>
     <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul></div>
-    ${tabla}${strip}${tablaStock}</div>`;
+    ${tabla}</div>`;
 }
 
 function getVisMonths(){
