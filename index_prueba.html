@@ -66,6 +66,10 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .down{color:#c0392b;font-weight:600}
 .top-title{padding:10px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:#faf8f5;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 tr.ref td{color:#888 !important;font-style:italic}
+tr.cae td{background:#fdf0f0 !important}
+tr.cae td:first-child{border-left:3px solid #c0392b;color:#922b21}
+.conclusion{margin:6px 0 10px;padding:10px 14px;background:#f7f5f1;border-left:3px solid #2b2b28;border-radius:2px}
+.top-nota{padding:6px 16px;font-size:11px;color:var(--muted);background:#faf8f5;border-top:1px solid var(--border)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
@@ -289,6 +293,7 @@ function renderDailyTable(days){
 // Se calcula siempre sobre todos los datos (no depende del filtro de mes).
 // ════════════════════════════════════════════════════════════════════
 const TOP_N=10;
+const PCT_RESALTAR=25;   // % de caída contra los 3 meses anteriores para resaltar la fila en rojo
 function mesC(k){const m=allMonths.find(x=>x.key===k);return m?m.label.split(' ')[0]:'';}
 function pct(a,b){return b?(a-b)/Math.abs(b)*100:null;}
 function sgn(v,d=0){return(v>0?'+':v<0?'−':'')+fmt(Math.abs(v),d);}
@@ -353,20 +358,43 @@ function renderInforme(){
     const empA=lista.filter(c=>!esMostrador(c.nombre)).reduce((s,c)=>s+c.a3,0);
     const moT=mostr.reduce((s,c)=>s+c.t3,0), moA=mostr.reduce((s,c)=>s+c.a3,0);
     pts.push(`Contra ${mesC(ant3[0]).toLowerCase()}–${mesC(ant3[ant3.length-1]).toLowerCase()}, el consumo de empresas cambió ${fPct(pct(totEmp,empA))} (${col(totEmp-empA,sgn(totEmp-empA))} platos) y el de mostrador ${fPct(pct(moT,moA))} (${col(moT-moA,sgn(moT-moA))} platos).`);
+    // Conclusión automática
+    const vE=pct(totEmp,empA), vM=pct(moT,moA), dE=totEmp-empA, dM=moT-moA;
+    const rel=v=>v!==null&&Math.abs(v)>=5;
+    const fv=v=>col(v,sgn(v,1)+'%');
+    let c;
+    if(dE<0&&dM<0&&rel(vE)&&rel(vM))c=`la baja de los últimos 3 meses viene tanto de las empresas (${fv(vE)}) como del mostrador (${fv(vM)}).`;
+    else if((dE+dM)<0&&rel(vE)&&Math.abs(dE)>=Math.abs(dM))c=`la baja de los últimos 3 meses viene de las empresas (${fv(vE)}), no del mostrador (${fv(vM)}).`;
+    else if((dE+dM)<0&&rel(vM))c=`la baja de los últimos 3 meses viene del mostrador (${fv(vM)}), no de las empresas (${fv(vE)}).`;
+    else if((dE+dM)>0&&(rel(vE)||rel(vM)))c=`el consumo de los últimos 3 meses creció: empresas ${fv(vE)} y mostrador ${fv(vM)}.`;
+    else c=`no hubo cambios relevantes en los últimos 3 meses (empresas ${fv(vE)}, mostrador ${fv(vM)}).`;
+    const emp=lista.filter(x=>!esMostrador(x.nombre)).map(x=>({...x,d:x.t3-x.a3}));
+    // no cuenta como caída si los 3 meses anteriores dependen de un solo mes pico (70% o más del total)
+    const pico=x=>{const m=Math.max(...ant3.map(k=>x.m[k]||0));return x.a3>=10&&m>=x.a3*0.7;};
+    const pierden=emp.filter(x=>x.d<=-5&&!pico(x)).sort((a,b)=>a.d-b.d).slice(0,2);
+    const ganan=emp.filter(x=>x.d>=5).sort((a,b)=>b.d-a.d).slice(0,2);
+    const corto=n=>esc(n.replace(/\s+(S\.?A\.?|S\.?R\.?L\.?|SRL|SA|SOCIEDAD ANONIMA|LTD\.?.*|Y CIA\.?.*|DE ARGENTINA.*|ARG(ENTINA)?.*|SERVICIOS ENERGIA.*|COMPANIA CONSTRUCTORA.*)$/,'').trim());
+    const nm=arr=>arr.map(x=>`${corto(x.nombre)} (${col(x.d,sgn(x.d))})`);
+    const unir=a=>a.length<2?a.join(''):a[0]+' y '+a[1];
+    if(pierden.length)c+=` Las mayores caídas son de ${unir(nm(pierden))}`;
+    if(ganan.length)c+=`${pierden.length?'; crecieron ':' Crecieron '}${unir(nm(ganan))}`;
+    if(pierden.length||ganan.length)c+='.';
+    var conclusion=`<div class="conclusion"><b>Conclusión:</b> ${c.charAt(0).toUpperCase()+c.slice(1)}</div>`;
   }
 
-  const fila=(c,i,ref)=>`<tr class="${ref?'ref':''}"><td>${ref?'':i+1+'. '}${esc(c.nombre)}</td>${ult3.map(k=>fmtCell(c.m[k]||0)).join('')}${fmtCell(c.t3)}<td>${fmt(totExt?c.t3/totExt*100:0,1)}%</td>${fmtCell(c.neto3,0,'$')}${ant3.length?`${fmtCell(c.a3)}<td>${c.a3?fPct(pct(c.t3,c.a3)):'<span class="zero">nuevo</span>'}</td>`:''}</tr>`;
+  const fila=(c,i,ref)=>`<tr class="${ref?'ref':(c.a3&&pct(c.t3,c.a3)<=-PCT_RESALTAR?'cae':'')}"><td>${ref?'':i+1+'. '}${esc(c.nombre)}</td>${ult3.map(k=>fmtCell(c.m[k]||0)).join('')}${fmtCell(c.t3)}<td>${fmt(totExt?c.t3/totExt*100:0,1)}%</td>${fmtCell(c.neto3,0,'$')}${ant3.length?`${fmtCell(c.a3)}<td>${c.a3?fPct(pct(c.t3,c.a3)):'<span class="zero">nuevo</span>'}</td>`:''}</tr>`;
   const head=`<tr><th>CLIENTE</th>${ult3.map(k=>`<th>${mesC(k).toUpperCase()}</th>`).join('')}<th>TOTAL 3 MESES</th><th>% EXTERNOS</th><th>NETO $</th>${ant3.length?`<th>${mesC(ant3[0]).slice(0,3).toUpperCase()}–${mesC(ant3[ant3.length-1]).slice(0,3).toUpperCase()}</th><th>VAR.</th>`:''}</tr>`;
   const tabla=`<div class="top-title">Top ${TOP_N} clientes empresa — últimos 3 meses cerrados (${mesC(ult3[0]).toLowerCase()} a ${mesC(u).toLowerCase()}), en platos</div>
     <div class="tbl-wrap"><table><thead>${head}</thead><tbody>
     ${top.map((c,i)=>fila(c,i,false)).join('')}
     <tr class="tot-row"><td>TOTAL TOP ${top.length}</td>${ult3.map(k=>fmtCell(top.reduce((s,c)=>s+(c.m[k]||0),0))).join('')}${fmtCell(topT)}<td>${fmt(totExt?topT/totExt*100:0,1)}%</td>${fmtCell(top.reduce((s,c)=>s+c.neto3,0),0,'$')}${ant3.length?`${fmtCell(top.reduce((s,c)=>s+c.a3,0))}<td>${fPct(pct(topT,top.reduce((s,c)=>s+c.a3,0)))}</td>`:''}</tr>
     ${mostr.map(c=>fila(c,0,true)).join('')}
-    </tbody></table></div>`;
+    </tbody></table></div>
+    ${ant3.length?`<div class="top-nota">En rojo: clientes que bajaron ${PCT_RESALTAR}% o más contra ${mesC(ant3[0]).toLowerCase()}–${mesC(ant3[ant3.length-1]).toLowerCase()}.</div>`:''}`;
 
   return`<div class="section-block sec-informe">
     <div class="section-title"><span class="tri">▶</span>INFORME</div>
-    <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+    <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul>${typeof conclusion!=='undefined'?conclusion:''}</div>
     ${tabla}</div>`;
 }
 
