@@ -66,6 +66,19 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .down{color:#c0392b;font-weight:600}
 .top-title{padding:10px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:#faf8f5;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 tr.ref td{color:#888 !important;font-style:italic}
+.sem-strip{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface)}
+.sem-dia{flex:1;min-width:90px;border:1px solid var(--border);border-radius:4px;padding:8px 10px;text-align:center}
+.sem-dia .d{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.sem-dia .v{font-size:18px;font-weight:600;margin-top:2px}
+.sem-dia .n{font-size:10px;color:var(--muted)}
+.sem-dia.max{border-color:#1a7a4a;background:#eef8f2}
+.sem-dia.min{border-color:#c0392b;background:#fdf0f0}
+td.txt{text-align:left !important;font-family:'IBM Plex Sans',sans-serif !important}
+.sub{font-size:10px;color:var(--muted)}
+tr.cae td{background:#fdf0f0 !important}
+tr.cae td:first-child{border-left:3px solid #c0392b;color:#922b21}
+.conclusion{margin:6px 0 10px;padding:10px 14px;background:#f7f5f1;border-left:3px solid #2b2b28;border-radius:2px}
+.top-nota{padding:6px 16px;font-size:11px;color:var(--muted);background:#faf8f5;border-top:1px solid var(--border)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
@@ -304,7 +317,10 @@ function datosInforme(){
     const d=parseDate(r[C.fecha],r[C.periodo]); if(!d)return;
     const k=monthKey(d), dk=d.toISOString().slice(0,10), q=signed(r,C.cantidad), n=signed(r,C.neto);
     if(!M[k])M[k]={platos:0,dias:new Set(),ext:0,diasExt:new Set()};
+    if(getSeccion(r)!=='externa')return;   // el informe usa solo clientes externos (sin Petrosar)
     M[k].platos+=q; M[k].dias.add(dk);
+    if(!M[k].porDia)M[k].porDia={};
+    M[k].porDia[dk]=(M[k].porDia[dk]||0)+q;
     if(getSeccion(r)==='externa'){
       M[k].ext+=q; M[k].diasExt.add(dk);
       const nom=nombreCli(r);
@@ -340,32 +356,39 @@ function renderInforme(){
     pts.push(`<b>${mesC(curso)}</b> (en curso) lleva ${Cm.nd} días y ${fmt(Cm.platos)} platos: ${fmt(Cm.prom,1)} por día, ${fPct(pct(Cm.prom,U.prom))} contra ${mesC(u).toLowerCase()}.`);
   }
 
-  // Top 10: últimos 3 meses cerrados vs los 3 anteriores
-  const ult3=cerrados.slice(-3), ant3=cerrados.slice(-6,-3);
-  const sum=(c,ks,f='m')=>ks.reduce((s,k)=>s+(c[f][k]||0),0);
-  const lista=Object.values(cli).map(c=>({...c,t3:sum(c,ult3),a3:sum(c,ant3),neto3:sum(c,ult3,'neto')}));
-  const empresas=lista.filter(c=>!esMostrador(c.nombre)&&c.t3>0).sort((a,b)=>b.t3-a.t3);
-  const mostr=lista.filter(c=>esMostrador(c.nombre)).sort((a,b)=>b.t3-a.t3);
-  const totExt=lista.reduce((s,c)=>s+c.t3,0), totEmp=empresas.reduce((s,c)=>s+c.t3,0);
-  const top=empresas.slice(0,TOP_N), topT=top.reduce((s,c)=>s+c.t3,0);
-  pts.push(`En ${mesC(ult3[0]).toLowerCase()}–${mesC(u).toLowerCase()} las empresas consumieron ${fmt(totEmp)} platos (${fmt(totExt?totEmp/totExt*100:0,1)}% de los externos); los ${top.length} principales concentran el ${fmt(totEmp?topT/totEmp*100:0,0)}% de ese consumo.`);
-  if(ant3.length){
-    const empA=lista.filter(c=>!esMostrador(c.nombre)).reduce((s,c)=>s+c.a3,0);
-    const moT=mostr.reduce((s,c)=>s+c.t3,0), moA=mostr.reduce((s,c)=>s+c.a3,0);
-    pts.push(`Contra ${mesC(ant3[0]).toLowerCase()}–${mesC(ant3[ant3.length-1]).toLowerCase()}, el consumo de empresas cambió ${fPct(pct(totEmp,empA))} (${col(totEmp-empA,sgn(totEmp-empA))} platos) y el de mostrador ${fPct(pct(moT,moA))} (${col(moT-moA,sgn(moT-moA))} platos).`);
+  // Top 10: clientes empresa de todo el período cerrado + consumidor final y empleados
+  const per=cerrados;
+  const sum=(c,f='m')=>per.reduce((s,k)=>s+(c[f][k]||0),0);
+  const lista=Object.values(cli).map(c=>({...c,t:sum(c),neto:sum(c,'neto')}));
+  const totExt=lista.reduce((s,c)=>s+c.t,0);
+  const empresas=lista.filter(c=>!esMostrador(c.nombre)&&c.t>0).sort((a,b)=>b.t-a.t);
+  const top=empresas.slice(0,TOP_N);
+  const mostr=lista.filter(c=>esMostrador(c.nombre)&&c.t>0).sort((a,b)=>b.t-a.t);
+  const filas=[...top,...mostr];
+  const rango=`${mesC(per[0]).toLowerCase()} a ${mesC(per[per.length-1]).toLowerCase()}`;
+  const totEmp=empresas.reduce((s,c)=>s+c.t,0), topT=top.reduce((s,c)=>s+c.t,0), moT=mostr.reduce((s,c)=>s+c.t,0);
+  const rank=[...lista].filter(c=>c.t>0).sort((x,y)=>y.t-x.t);
+  if(rank.length){
+    const pc=c=>fmt(totExt?c.t/totExt*100:0,1)+'%';
+    const corto=n=>esc(n.replace(/\s+(S\.?A\.?|S\.?R\.?L\.?|SRL|SA|SOCIEDAD ANONIMA|LTD\.?.*|Y CIA\.?.*|DE ARGENTINA.*|ARG(ENTINA)?.*|SERVICIOS ENERGIA.*|COMPANIA CONSTRUCTORA.*)$/,'').trim());
+    const primEmp=rank.find(c=>!esMostrador(c.nombre));
+    const sig=rank.slice(1,3).map(c=>`${corto(c.nombre)} (${pc(c)}${c===primEmp?', la primera empresa':''})`);
+    let t=`El principal cliente de ${rango} es <b>${corto(rank[0].nombre)}</b>: ${fmt(rank[0].t)} platos, el ${pc(rank[0])} de los platos externos.`;
+    if(sig.length)t+=` Le ${sig.length>1?'siguen':'sigue'} ${sig.join(' y ')}.`;
+    if(primEmp&&!rank.slice(0,3).includes(primEmp))t+=` La primera empresa es ${corto(primEmp.nombre)} (${pc(primEmp)}).`;
+    pts.push(t);
   }
 
-  const fila=(c,i,ref)=>`<tr class="${ref?'ref':''}"><td>${ref?'':i+1+'. '}${esc(c.nombre)}</td>${ult3.map(k=>fmtCell(c.m[k]||0)).join('')}${fmtCell(c.t3)}<td>${fmt(totExt?c.t3/totExt*100:0,1)}%</td>${fmtCell(c.neto3,0,'$')}${ant3.length?`${fmtCell(c.a3)}<td>${c.a3?fPct(pct(c.t3,c.a3)):'<span class="zero">nuevo</span>'}</td>`:''}</tr>`;
-  const head=`<tr><th>CLIENTE</th>${ult3.map(k=>`<th>${mesC(k).toUpperCase()}</th>`).join('')}<th>TOTAL 3 MESES</th><th>% EXTERNOS</th><th>NETO $</th>${ant3.length?`<th>${mesC(ant3[0]).slice(0,3).toUpperCase()}–${mesC(ant3[ant3.length-1]).slice(0,3).toUpperCase()}</th><th>VAR.</th>`:''}</tr>`;
-  const tabla=`<div class="top-title">Top ${TOP_N} clientes empresa — últimos 3 meses cerrados (${mesC(ult3[0]).toLowerCase()} a ${mesC(u).toLowerCase()}), en platos</div>
-    <div class="tbl-wrap"><table><thead>${head}</thead><tbody>
-    ${top.map((c,i)=>fila(c,i,false)).join('')}
-    <tr class="tot-row"><td>TOTAL TOP ${top.length}</td>${ult3.map(k=>fmtCell(top.reduce((s,c)=>s+(c.m[k]||0),0))).join('')}${fmtCell(topT)}<td>${fmt(totExt?topT/totExt*100:0,1)}%</td>${fmtCell(top.reduce((s,c)=>s+c.neto3,0),0,'$')}${ant3.length?`${fmtCell(top.reduce((s,c)=>s+c.a3,0))}<td>${fPct(pct(topT,top.reduce((s,c)=>s+c.a3,0)))}</td>`:''}</tr>
-    ${mostr.map(c=>fila(c,0,true)).join('')}
+  const fila=(c,i)=>`<tr class="${i===top.length?'separator':''}"><td>${i<top.length?i+1+'. ':''}${esc(c.nombre)}</td>${per.map(k=>fmtCell(c.m[k]||0)).join('')}${fmtCell(c.t)}<td>${fmt(totExt?c.t/totExt*100:0,1)}%</td>${fmtCell(c.neto,0,'$')}</tr>`;
+  const tot=arr=>`${per.map(k=>fmtCell(arr.reduce((s,c)=>s+(c.m[k]||0),0))).join('')}${fmtCell(arr.reduce((s,c)=>s+c.t,0))}<td>${fmt(totExt?arr.reduce((s,c)=>s+c.t,0)/totExt*100:0,1)}%</td>${fmtCell(arr.reduce((s,c)=>s+c.neto,0),0,'$')}`;
+  const tabla=`<div class="top-title">Top ${TOP_N} clientes empresa + consumidor final — ${rango}, en platos</div>
+    <div class="tbl-wrap"><table><thead><tr><th>CLIENTE</th>${per.map(k=>`<th>${mesC(k).slice(0,3).toUpperCase()}</th>`).join('')}<th>TOTAL</th><th>% EXTERNOS</th><th>NETO $</th></tr></thead><tbody>
+    ${filas.map((c,i)=>fila(c,i)).join('')}
+    <tr class="tot-row"><td>TOTAL DE LA TABLA</td>${tot(filas)}</tr>
     </tbody></table></div>`;
 
   return`<div class="section-block sec-informe">
-    <div class="section-title"><span class="tri">▶</span>INFORME</div>
+    <div class="section-title"><span class="tri">▶</span>INFORME — CLIENTES EXTERNOS (SIN PETROSAR)</div>
     <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul></div>
     ${tabla}</div>`;
 }
@@ -442,7 +465,6 @@ function render(){
     html+=renderDailyTable(days);
   }
 
-  html+=renderTable('GENERAL','sec-general',vis,metGen);
   html+=renderTable('CLIENTES EXTERNOS','sec-externa',vis,metExt);
   html+=renderTable('PETROSAR — Consumo Interno','sec-interna',vis,metInt);
 
