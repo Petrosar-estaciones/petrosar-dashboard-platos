@@ -66,6 +66,15 @@ tr.tot-row td:first-child{background:#f7f5f1 !important}
 .down{color:#c0392b;font-weight:600}
 .top-title{padding:10px 16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:#faf8f5;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 tr.ref td{color:#888 !important;font-style:italic}
+.sem-strip{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface)}
+.sem-dia{flex:1;min-width:90px;border:1px solid var(--border);border-radius:4px;padding:8px 10px;text-align:center}
+.sem-dia .d{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.sem-dia .v{font-size:18px;font-weight:600;margin-top:2px}
+.sem-dia .n{font-size:10px;color:var(--muted)}
+.sem-dia.max{border-color:#1a7a4a;background:#eef8f2}
+.sem-dia.min{border-color:#c0392b;background:#fdf0f0}
+td.txt{text-align:left !important;font-family:'IBM Plex Sans',sans-serif !important}
+.sub{font-size:10px;color:var(--muted)}
 tr.cae td{background:#fdf0f0 !important}
 tr.cae td:first-child{border-left:3px solid #c0392b;color:#922b21}
 .conclusion{margin:6px 0 10px;padding:10px 14px;background:#f7f5f1;border-left:3px solid #2b2b28;border-radius:2px}
@@ -309,6 +318,8 @@ function datosInforme(){
     const k=monthKey(d), dk=d.toISOString().slice(0,10), q=signed(r,C.cantidad), n=signed(r,C.neto);
     if(!M[k])M[k]={platos:0,dias:new Set(),ext:0,diasExt:new Set()};
     M[k].platos+=q; M[k].dias.add(dk);
+    if(!M[k].porDia)M[k].porDia={};
+    M[k].porDia[dk]=(M[k].porDia[dk]||0)+q;
     if(getSeccion(r)==='externa'){
       M[k].ext+=q; M[k].diasExt.add(dk);
       const nom=nombreCli(r);
@@ -355,7 +366,17 @@ function renderInforme(){
   const filas=[...top,...mostr];
   const rango=`${mesC(per[0]).toLowerCase()} a ${mesC(per[per.length-1]).toLowerCase()}`;
   const totEmp=empresas.reduce((s,c)=>s+c.t,0), topT=top.reduce((s,c)=>s+c.t,0), moT=mostr.reduce((s,c)=>s+c.t,0);
-  pts.push(`De ${rango}, el mostrador (consumidor final y empleados) representa el ${fmt(totExt?moT/totExt*100:0,1)}% de los platos externos y las empresas el ${fmt(totExt?totEmp/totExt*100:0,1)}%; los ${top.length} principales clientes empresa concentran el ${fmt(totEmp?topT/totEmp*100:0,0)}% del consumo de empresas.`);
+  const rank=[...lista].filter(c=>c.t>0).sort((x,y)=>y.t-x.t);
+  if(rank.length){
+    const pc=c=>fmt(totExt?c.t/totExt*100:0,1)+'%';
+    const corto=n=>esc(n.replace(/\s+(S\.?A\.?|S\.?R\.?L\.?|SRL|SA|SOCIEDAD ANONIMA|LTD\.?.*|Y CIA\.?.*|DE ARGENTINA.*|ARG(ENTINA)?.*|SERVICIOS ENERGIA.*|COMPANIA CONSTRUCTORA.*)$/,'').trim());
+    const primEmp=rank.find(c=>!esMostrador(c.nombre));
+    const sig=rank.slice(1,3).map(c=>`${corto(c.nombre)} (${pc(c)}${c===primEmp?', la primera empresa':''})`);
+    let t=`El principal cliente de ${rango} es <b>${corto(rank[0].nombre)}</b>: ${fmt(rank[0].t)} platos, el ${pc(rank[0])} de los platos externos.`;
+    if(sig.length)t+=` Le ${sig.length>1?'siguen':'sigue'} ${sig.join(' y ')}.`;
+    if(primEmp&&!rank.slice(0,3).includes(primEmp))t+=` La primera empresa es ${corto(primEmp.nombre)} (${pc(primEmp)}).`;
+    pts.push(t);
+  }
 
   const fila=(c,i)=>`<tr class="${i===top.length?'separator':''}"><td>${i<top.length?i+1+'. ':''}${esc(c.nombre)}</td>${per.map(k=>fmtCell(c.m[k]||0)).join('')}${fmtCell(c.t)}<td>${fmt(totExt?c.t/totExt*100:0,1)}%</td>${fmtCell(c.neto,0,'$')}</tr>`;
   const tot=arr=>`${per.map(k=>fmtCell(arr.reduce((s,c)=>s+(c.m[k]||0),0))).join('')}${fmtCell(arr.reduce((s,c)=>s+c.t,0))}<td>${fmt(totExt?arr.reduce((s,c)=>s+c.t,0)/totExt*100:0,1)}%</td>${fmtCell(arr.reduce((s,c)=>s+c.neto,0),0,'$')}`;
@@ -365,10 +386,42 @@ function renderInforme(){
     <tr class="tot-row"><td>TOTAL DE LA TABLA</td>${tot(filas)}</tr>
     </tbody></table></div>`;
 
+  // ── Para planificar stock: día de la semana, día pico y semanas ──
+  const DS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const fd=dk=>{const d=new Date(dk+'T12:00:00');return{d,txt:`${DS[d.getDay()].toLowerCase()} ${d.getDate()}/${d.getMonth()+1}`};};
+  const todos=allMonths.map(m=>m.key).filter(k=>M[k]);
+  const pw={};
+  todos.forEach(k=>Object.entries(M[k].porDia).forEach(([dk,q])=>{const w=fd(dk).d.getDay();if(!pw[w])pw[w]={q:0,n:0};pw[w].q+=q;pw[w].n++;}));
+  const dias=[1,2,3,4,5,6,0].filter(w=>pw[w]&&pw[w].n>=3).map(w=>({w,prom:pw[w].q/pw[w].n,n:pw[w].n}));
+  const mx=Math.max(...dias.map(x=>x.prom)), mn=Math.min(...dias.map(x=>x.prom));
+  const strip=dias.length?`<div class="top-title">Promedio de platos por día de la semana — ${mesC(todos[0]).toLowerCase()} a ${mesC(todos[todos.length-1]).toLowerCase()}</div>
+    <div class="sem-strip">${dias.map(x=>`<div class="sem-dia ${x.prom===mx?'max':x.prom===mn?'min':''}"><div class="d">${DS[x.w]}</div><div class="v">${fmt(x.prom,1)}</div><div class="n">${x.prom===mx?'el más fuerte':x.prom===mn?'el más flojo':`${x.n} días`}</div></div>`).join('')}</div>`:'';
+  const semanas=k=>{const w={};Object.entries(M[k].porDia).forEach(([dk,q])=>{const d=fd(dk).d;const l=new Date(d);l.setDate(d.getDate()-((d.getDay()+6)%7));const key=l.toISOString().slice(0,10);if(!w[key])w[key]={ini:d,q:0,n:0};if(d<w[key].ini)w[key].ini=d;w[key].q+=q;w[key].n++;});
+    return Object.values(w).filter(x=>x.n>=2).map(x=>({...x,prom:x.q/x.n}));};
+  const fs=x=>`semana del ${x.ini.getDate()}/${x.ini.getMonth()+1}`;
+  const filasStock=[...todos].reverse().map(k=>{
+    const pd=Object.entries(M[k].porDia).sort((a,b)=>b[1]-a[1]);
+    const pico=pd[0], bajo=pd[pd.length-1], sem=semanas(k);
+    const fl=sem.length?sem.reduce((a,b)=>b.prom<a.prom?b:a):null, fu=sem.length?sem.reduce((a,b)=>b.prom>a.prom?b:a):null;
+    return`<tr><td>${mesC(k)}${k===curso?' <span class="sub">(en curso)</span>':''}</td>${fmtCell(M[k].prom,1)}
+      <td class="txt">${pico?`${fd(pico[0]).txt} <b>${fmt(pico[1])}</b>`:'—'}</td>
+      <td class="txt">${bajo?`${fd(bajo[0]).txt} <b>${fmt(bajo[1])}</b>`:'—'}</td>
+      <td class="txt">${fu?`${fs(fu)} <b>${fmt(fu.prom,1)}</b> <span class="sub">/día</span>`:'—'}</td>
+      <td class="txt">${fl?`${fs(fl)} <b>${fmt(fl.prom,1)}</b> <span class="sub">/día</span>`:'—'}</td></tr>`;}).join('');
+  const tablaStock=`<div class="top-title">Para planificar stock — día de más y menos ventas y semanas por mes (platos, incluye Petrosar)</div>
+    <div class="tbl-wrap"><table><thead><tr><th>MES</th><th>PROM./DÍA</th><th>DÍA DE MÁS VENTAS</th><th>DÍA DE MENOS VENTAS</th><th>SEMANA MÁS FUERTE</th><th>SEMANA MÁS FLOJA</th></tr></thead><tbody>${filasStock}</tbody></table></div>`;
+  // punto en el informe
+  if(dias.length){
+    const fuerte=dias.find(x=>x.prom===mx), flojo=dias.find(x=>x.prom===mn);
+    const u2=u, pd=Object.entries(M[u2].porDia).sort((a,b)=>b[1]-a[1]), sem=semanas(u2);
+    const fl=sem.length?sem.reduce((a,b)=>b.prom<a.prom?b:a):null;
+    pts.push(`<b>Para el stock:</b> el día más fuerte es el <b>${DS[fuerte.w].toLowerCase()}</b> (${fmt(fuerte.prom,1)} platos en promedio) y el más flojo el <b>${DS[flojo.w].toLowerCase()}</b> (${fmt(flojo.prom,1)}), ${fmt(Math.abs(pct(flojo.prom,fuerte.prom)),0)}% menos. En ${mesC(u2).toLowerCase()}${u2===curso?' (en curso)':''} el día de más ventas fue el ${fd(pd[0][0]).txt} (${fmt(pd[0][1])} platos)${fl?` y la semana más floja, la ${fs(fl)} (${fmt(fl.prom,1)} por día)`:''}.`);
+  }
+
   return`<div class="section-block sec-informe">
     <div class="section-title"><span class="tri">▶</span>INFORME</div>
     <div class="informe-body"><ul>${pts.map(t=>`<li>${t}</li>`).join('')}</ul></div>
-    ${tabla}</div>`;
+    ${tabla}${strip}${tablaStock}</div>`;
 }
 
 function getVisMonths(){
